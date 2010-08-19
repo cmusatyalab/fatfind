@@ -67,6 +67,24 @@ public class Main {
 
     final private IconView calibrationImages;
 
+    final private TreeView definedSearches;
+
+    final DataColumnString savedSearchName = new DataColumnString();
+
+    final DataColumnReference savedSearchObject = new DataColumnReference();
+
+    final ListStore savedSearchStore = new ListStore(new DataColumn[] {
+            savedSearchName, savedSearchObject });
+
+    final DataColumnPixbuf foundItemThumbnail = new DataColumnPixbuf();
+
+    final DataColumnString foundItemTitle = new DataColumnString();
+
+    final DataColumnReference foundItemResult = new DataColumnReference();
+
+    final ListStore foundItems = new ListStore(new DataColumn[] {
+            foundItemThumbnail, foundItemTitle, foundItemResult });
+
     private Main(XML glade, File index) throws IOException {
         fatfind = (Window) glade.getWidget("fatfind");
         selectedImage = (DrawingArea) glade.getWidget("selectedImage");
@@ -86,10 +104,32 @@ public class Main {
         selectedResult = (DrawingArea) glade.getWidget("selectedResult");
         histogramWindow = (Window) glade.getWidget("histogramWindow");
         calibrationImages = (IconView) glade.getWidget("calibrationImages");
+        definedSearches = (TreeView) glade.getWidget("definedSearches");
 
         connectSignals(glade);
 
         setupThumbnails(index);
+
+        setupSavedSearchStore();
+
+        setupResultsStore();
+    }
+
+    private void setupResultsStore() {
+        searchResults.setModel(foundItems);
+
+        searchResults.setPixbufColumn(foundItemThumbnail);
+        searchResults.setTextColumn(foundItemTitle);
+    }
+
+    private void setupSavedSearchStore() {
+        definedSearches.setModel(savedSearchStore);
+
+        TreeViewColumn column = definedSearches.appendColumn();
+        column.setTitle("Name");
+
+        CellRendererText renderer = new CellRendererText(column);
+        renderer.setText(savedSearchName);
     }
 
     private void setupThumbnails(File file) throws IOException {
@@ -207,8 +247,6 @@ public class Main {
             @Override
             public boolean onExposeEvent(Widget source, EventExpose event) {
                 // TODO
-                System.out.println(source.getAllocation());
-                System.out.println("wee2");
                 return false;
             }
         });
@@ -217,7 +255,6 @@ public class Main {
             @Override
             public boolean onButtonPressEvent(Widget source, EventButton event) {
                 // TODO Auto-generated method stub
-                System.out.println("wee3");
                 return false;
             }
         });
@@ -226,7 +263,6 @@ public class Main {
             @Override
             public boolean onMotionNotifyEvent(Widget source, EventMotion event) {
                 // TODO Auto-generated method stub
-                System.out.println("wee4");
                 return false;
             }
         });
@@ -236,7 +272,6 @@ public class Main {
             @Override
             public boolean onEnterNotifyEvent(Widget source, EventCrossing event) {
                 // TODO Auto-generated method stub
-                System.out.println("wee5");
                 return false;
             }
         });
@@ -246,7 +281,6 @@ public class Main {
             @Override
             public boolean onLeaveNotifyEvent(Widget source, EventCrossing event) {
                 // TODO Auto-generated method stub
-                System.out.println("wee6");
                 return false;
             }
         });
@@ -258,7 +292,6 @@ public class Main {
             @Override
             public void onValueChanged(Range source) {
                 // TODO Auto-generated method stub
-                System.out.println(source.getValue());
             }
         });
 
@@ -269,7 +302,6 @@ public class Main {
             @Override
             public void onValueChanged(Range source) {
                 // TODO Auto-generated method stub
-                System.out.println(source.getValue());
             }
         });
 
@@ -280,7 +312,6 @@ public class Main {
             @Override
             public void onValueChanged(Range source) {
                 // TODO Auto-generated method stub
-                System.out.println(source.getValue());
             }
         });
 
@@ -291,7 +322,6 @@ public class Main {
             @Override
             public void onValueChanged(Range source) {
                 // TODO Auto-generated method stub
-                System.out.println(source.getValue());
             }
         });
 
@@ -302,7 +332,6 @@ public class Main {
             @Override
             public void onClicked(Button source) {
                 // TODO Auto-generated method stub
-                System.out.println("clicked");
             }
         });
 
@@ -324,7 +353,6 @@ public class Main {
             @Override
             public void onChanged(Editable source) {
                 // TODO
-                System.out.println(((Entry) source).getText());
             }
         });
 

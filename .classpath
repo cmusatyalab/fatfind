@@ -7,5 +7,6 @@
 			<attribute name="javadoc_location" value="file:/usr/share/javadoc/java-gnome"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/usr/share/java/opendiamond.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
