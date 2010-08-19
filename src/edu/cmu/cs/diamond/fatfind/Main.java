@@ -14,7 +14,10 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
-import java.io.FileNotFoundException;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 import org.gnome.gdk.*;
 import org.gnome.glade.Glade;
@@ -62,7 +65,9 @@ public class Main {
 
     final private Window histogramWindow;
 
-    private Main(XML glade) {
+    final private IconView calibrationImages;
+
+    private Main(XML glade, File index) throws IOException {
         fatfind = (Window) glade.getWidget("fatfind");
         selectedImage = (DrawingArea) glade.getWidget("selectedImage");
         calibrateRefImage = (Image) glade.getWidget("calibrateRefImage");
@@ -80,17 +85,61 @@ public class Main {
         generateHistogram = (Button) glade.getWidget("generateHistogram");
         selectedResult = (DrawingArea) glade.getWidget("selectedResult");
         histogramWindow = (Window) glade.getWidget("histogramWindow");
+        calibrationImages = (IconView) glade.getWidget("calibrationImages");
 
         connectSignals(glade);
+
+        setupThumbnails(index);
     }
 
-    public static void main(String[] args) throws FileNotFoundException {
+    private void setupThumbnails(File file) throws IOException {
+        String dirname = file.getParent();
+
+        // get index
+        BufferedReader f = new BufferedReader(new FileReader(file));
+
+        try {
+            // create the model
+            DataColumnPixbuf thumbnailColumn = new DataColumnPixbuf();
+            DataColumnString filenameColumn = new DataColumnString();
+            ListStore s = new ListStore(new DataColumn[] { thumbnailColumn,
+                    filenameColumn });
+
+            // get all the thumbnails
+            String line;
+            while ((line = f.readLine()) != null) {
+                String filename = line.trim();
+                Pixbuf pix = new Pixbuf(new File(dirname, filename).getPath(),
+                        150, -1, true);
+                TreeIter row = s.appendRow();
+                s.setValue(row, thumbnailColumn, pix);
+                s.setValue(row, filenameColumn, filename);
+            }
+
+            // set it up
+            calibrationImages.setModel(s);
+            calibrationImages.setPixbufColumn(thumbnailColumn);
+            // calibrationImages.setTextColumn(filenameColumn);
+        } finally {
+            try {
+                f.close();
+            } catch (IOException ignore) {
+            }
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        if (args.length != 1) {
+            System.out.println("No image index given on command line");
+            System.exit(1);
+        }
+
         Gtk.init(args);
         Gtk.setProgramName("FatFind");
 
         XML glade = Glade.parse("/usr/share/fatfind/glade/fatfind.glade", null);
 
-        Main main = new Main(glade);
+        Main main = new Main(glade, new File(args[0]));
 
         main.showFatFind();
 
