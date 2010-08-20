@@ -18,7 +18,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
 
+import org.freedesktop.cairo.Context;
 import org.gnome.gdk.*;
 import org.gnome.glade.Glade;
 import org.gnome.glade.XML;
@@ -69,21 +71,33 @@ public class Main {
 
     final private TreeView definedSearches;
 
-    final DataColumnString savedSearchName = new DataColumnString();
+    final private DataColumnString savedSearchName = new DataColumnString();
 
-    final DataColumnReference savedSearchObject = new DataColumnReference();
+    final private DataColumnReference savedSearchObject = new DataColumnReference();
 
-    final ListStore savedSearchStore = new ListStore(new DataColumn[] {
+    final private ListStore savedSearchStore = new ListStore(new DataColumn[] {
             savedSearchName, savedSearchObject });
 
-    final DataColumnPixbuf foundItemThumbnail = new DataColumnPixbuf();
+    final private DataColumnPixbuf foundItemThumbnail = new DataColumnPixbuf();
 
-    final DataColumnString foundItemTitle = new DataColumnString();
+    final private DataColumnString foundItemTitle = new DataColumnString();
 
-    final DataColumnReference foundItemResult = new DataColumnReference();
+    final private DataColumnReference foundItemResult = new DataColumnReference();
 
-    final ListStore foundItems = new ListStore(new DataColumn[] {
+    final private ListStore foundItems = new ListStore(new DataColumn[] {
             foundItemThumbnail, foundItemTitle, foundItemResult });
+
+    final private DataColumnPixbuf calibrationImagesThumbnail = new DataColumnPixbuf();
+
+    final private DataColumnString calibrationImagesFilename = new DataColumnString();
+
+    final private ListStore calibrationImagesModel = new ListStore(
+            new DataColumn[] { calibrationImagesThumbnail,
+                    calibrationImagesFilename });
+
+    private ProcessedImage calibrationImage;
+
+    private final File dir;
 
     private Main(XML glade, File index) throws IOException {
         fatfind = (Window) glade.getWidget("fatfind");
@@ -105,6 +119,8 @@ public class Main {
         histogramWindow = (Window) glade.getWidget("histogramWindow");
         calibrationImages = (IconView) glade.getWidget("calibrationImages");
         definedSearches = (TreeView) glade.getWidget("definedSearches");
+
+        dir = index.getParentFile();
 
         connectSignals(glade);
 
@@ -133,32 +149,28 @@ public class Main {
     }
 
     private void setupThumbnails(File file) throws IOException {
-        String dirname = file.getParent();
-
         // get index
         BufferedReader f = new BufferedReader(new FileReader(file));
 
         try {
             // create the model
-            DataColumnPixbuf thumbnailColumn = new DataColumnPixbuf();
-            DataColumnString filenameColumn = new DataColumnString();
-            ListStore s = new ListStore(new DataColumn[] { thumbnailColumn,
-                    filenameColumn });
 
             // get all the thumbnails
             String line;
             while ((line = f.readLine()) != null) {
                 String filename = line.trim();
-                Pixbuf pix = new Pixbuf(new File(dirname, filename).getPath(),
-                        150, -1, true);
-                TreeIter row = s.appendRow();
-                s.setValue(row, thumbnailColumn, pix);
-                s.setValue(row, filenameColumn, filename);
+                Pixbuf pix = new Pixbuf(new File(dir, filename).getPath(), 150,
+                        -1, true);
+                TreeIter row = calibrationImagesModel.appendRow();
+                calibrationImagesModel.setValue(row,
+                        calibrationImagesThumbnail, pix);
+                calibrationImagesModel.setValue(row, calibrationImagesFilename,
+                        filename);
             }
 
             // set it up
-            calibrationImages.setModel(s);
-            calibrationImages.setPixbufColumn(thumbnailColumn);
+            calibrationImages.setModel(calibrationImagesModel);
+            calibrationImages.setPixbufColumn(calibrationImagesThumbnail);
             // calibrationImages.setTextColumn(filenameColumn);
         } finally {
             try {
@@ -219,13 +231,41 @@ public class Main {
         });
 
         // calibrationImages
-        IconView calibrationImages = (IconView) glade
-                .getWidget("calibrationImages");
         calibrationImages.connect(new IconView.SelectionChanged() {
             @Override
             public void onSelectionChanged(IconView source) {
                 // TODO Auto-generated method stub
-                System.out.println("wee");
+
+                // reset reference image
+                setReferenceCircle(-1);
+
+                // load the image, find circles
+                for (TreePath path : source.getSelectedItems()) {
+                    TreeIter item = calibrationImagesModel.getIter(path);
+                    String filename = calibrationImagesModel.getValue(item,
+                            calibrationImagesFilename);
+
+                    try {
+                        Pixbuf calibrationPix = new Pixbuf(new File(dir,
+                                filename).getPath());
+
+                        // busy cursor
+                        fatfind.getWindow().setCursor(Cursor.BUSY);
+
+                        // compute the circles
+                        Allocation a = selectedImage.getAllocation();
+                        calibrationImage = ProcessedImage.createProcessedImage(
+                                calibrationPix, 1.0, a.getWidth(), a
+                                        .getHeight());
+                        System.out.println(calibrationImage.getCircles());
+
+                        selectedImage.queueDraw();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        fatfind.getWindow().setCursor(Cursor.NORMAL);
+                    }
+                }
             }
         });
 
@@ -240,14 +280,23 @@ public class Main {
         });
 
         // selectedImage
-        DrawingArea selectedImage = (DrawingArea) glade
-                .getWidget("selectedImage");
-
         selectedImage.connect(new ExposeEvent() {
             @Override
             public boolean onExposeEvent(Widget source, EventExpose event) {
-                // TODO
-                return false;
+                if (calibrationImage != null) {
+                    Allocation a = source.getAllocation();
+                    calibrationImage.rescale(a.getWidth(), a.getHeight());
+
+                    Context cr = new Context(source.getWindow());
+
+                    cr.setSource(calibrationImage.getScaled(), 0, 0);
+                    cr.paint();
+
+                    drawCircles(cr, calibrationImage.getCircles(),
+                            calibrationImage.getScale());
+                }
+
+                return true;
             }
         });
 
@@ -431,7 +480,7 @@ public class Main {
 
             @Override
             public boolean onExposeEvent(Widget source, EventExpose event) {
-                // TODO Auto-generated method stub
+                // TODO
                 return false;
             }
         });
@@ -479,5 +528,44 @@ public class Main {
                 return false;
             }
         });
+    }
+
+    static void drawCircles(Context cr, List<Circle> circles, double scale) {
+        for (Circle c : circles) {
+            // g_debug("drawing %g %g %g %g %g", x, y, a, b, t);
+
+            // draw
+            cr.save();
+            cr.scale(scale, scale);
+
+            cr.translate(c.getX(), c.getY());
+            cr.rotate(c.getT());
+            cr.scale(c.getA(), c.getB());
+
+            cr.moveTo(1.0, 0.0);
+            cr.arc(0.0, 0.0, 1.0, 0.0, 2 * Math.PI);
+
+            cr.restore();
+
+            if (c.isInResult()) {
+                // show fill, no dash
+                cr.setLineWidth(2.0);
+                cr.setDash(new double[0]);
+                cr.setSource(1.0, 0.0, 0.0);
+                cr.strokePreserve();
+                cr.setSource(1.0, 0.0, 0.0, 0.2);
+                cr.fill();
+            } else {
+                double dash[] = { 5.0 };
+                cr.setLineWidth(1.0);
+                cr.setDash(dash);
+                cr.setSource(1.0, 0.0, 0.0);
+                cr.stroke();
+            }
+        }
+    }
+
+    private void setReferenceCircle(int i) {
+        // TODO
     }
 }

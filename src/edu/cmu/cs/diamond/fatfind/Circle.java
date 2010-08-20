@@ -14,6 +14,12 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.gnome.gdk.Pixbuf;
+
 class Circle {
     final private float x;
 
@@ -58,5 +64,76 @@ class Circle {
 
     public boolean isInResult() {
         return inResult;
+    }
+
+    @Override
+    public String toString() {
+        return "{ x: + " + x + ", y: " + y + ", a: " + a + ", b: " + b
+                + ", t: " + t + ", inResult: " + inResult + "}";
+    }
+
+    public static List<Circle> createFromPixbuf(Pixbuf buf, double minSharpness)
+            throws IOException {
+        if (buf.getNumChannels() != 3) {
+            throw new IllegalArgumentException(
+                    "buf must have exactly 3 channels");
+        }
+
+        int w = buf.getWidth();
+        int h = buf.getHeight();
+        byte data[] = buf.getPixels();
+
+        ProcessBuilder pb = new ProcessBuilder("/tmp/zzff/bin/fatfind-runner",
+                Double.toString(minSharpness));
+        Process p = null;
+        BufferedReader in = null;
+        OutputStream out = null;
+
+        try {
+            p = pb.start();
+            in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            out = new BufferedOutputStream(p.getOutputStream());
+
+            // write width
+            out.write(Integer.toString(w).getBytes("utf-8"));
+            out.write('\n');
+
+            // write height
+            out.write(Integer.toString(h).getBytes("utf-8"));
+            out.write('\n');
+
+            // write data
+            out.write(data);
+
+            out.flush();
+
+            // read in circles
+            String line;
+            List<Circle> circles = new ArrayList<Circle>();
+            while ((line = in.readLine()) != null) {
+                String items[] = line.split(" ");
+                circles.add(new Circle(Float.parseFloat(items[0]), Float
+                        .parseFloat(items[1]), Float.parseFloat(items[2]),
+                        Float.parseFloat(items[3]), Float.parseFloat(items[4]),
+                        Boolean.parseBoolean(items[5])));
+            }
+            return circles;
+        } finally {
+            if (p != null) {
+                p.destroy();
+            }
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ignore) {
+                }
+            }
+            if (out != null) {
+                try {
+                    out.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
     }
 }
