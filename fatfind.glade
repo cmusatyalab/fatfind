@@ -20,7 +20,6 @@
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
-  <signal name="destroy" handler="gtk_main_quit" last_modification_time="Sat, 08 Jul 2006 20:38:48 GMT"/>
 
   <child>
     <widget class="GtkVBox" id="vbox1">
@@ -48,7 +47,6 @@
 		      <property name="visible">True</property>
 		      <property name="label">gtk-quit</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="gtk_main_quit" last_modification_time="Sat, 08 Jul 2006 20:37:22 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -70,7 +68,6 @@
 		      <property name="visible">True</property>
 		      <property name="label">gtk-about</property>
 		      <property name="use_stock">True</property>
-		      <signal name="activate" handler="on_about1_activate" last_modification_time="Tue, 12 Sep 2006 17:20:47 GMT"/>
 		    </widget>
 		  </child>
 		</widget>
@@ -157,7 +154,6 @@
 					  <property name="selection_mode">GTK_SELECTION_BROWSE</property>
 					  <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
 					  <property name="reorderable">False</property>
-					  <signal name="selection_changed" handler="on_calibrationImages_selection_changed" last_modification_time="Sat, 08 Jul 2006 22:31:29 GMT"/>
 					</widget>
 				      </child>
 				    </widget>
@@ -228,12 +224,6 @@
 				<widget class="GtkDrawingArea" id="selectedImage">
 				  <property name="visible">True</property>
 				  <property name="events">GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK</property>
-				  <signal name="expose_event" handler="on_selectedImage_expose_event" last_modification_time="Sun, 09 Jul 2006 01:28:04 GMT"/>
-				  <signal name="button_press_event" handler="on_selectedImage_button_press_event" last_modification_time="Sun, 09 Jul 2006 03:48:23 GMT"/>
-				  <signal name="motion_notify_event" handler="on_selectedImage_motion_notify_event" last_modification_time="Sun, 09 Jul 2006 14:37:31 GMT"/>
-				  <signal name="configure_event" handler="on_selectedImage_configure_event" last_modification_time="Sun, 09 Jul 2006 14:44:36 GMT"/>
-				  <signal name="enter_notify_event" handler="on_selectedImage_enter_notify_event" last_modification_time="Mon, 10 Jul 2006 01:15:57 GMT"/>
-				  <signal name="leave_notify_event" handler="on_selectedImage_leave_notify_event" last_modification_time="Mon, 10 Jul 2006 01:16:06 GMT"/>
 				</widget>
 			      </child>
 			    </widget>
@@ -559,7 +549,6 @@
 					  <property name="update_policy">GTK_UPDATE_CONTINUOUS</property>
 					  <property name="inverted">False</property>
 					  <property name="adjustment">1 0.00999999977648 1 -0.00999999977648 0.10000000149 0</property>
-					  <signal name="value_changed" handler="on_define_search_value_changed" last_modification_time="Mon, 10 Jul 2006 17:29:34 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -578,7 +567,6 @@
 					  <property name="update_policy">GTK_UPDATE_CONTINUOUS</property>
 					  <property name="inverted">False</property>
 					  <property name="adjustment">1 1 10 0.10000000149 1 0</property>
-					  <signal name="value_changed" handler="on_define_search_value_changed" last_modification_time="Mon, 10 Jul 2006 17:29:53 GMT"/>
 					</widget>
 					<packing>
 					  <property name="padding">0</property>
@@ -606,7 +594,6 @@
 				      <property name="update_policy">GTK_UPDATE_CONTINUOUS</property>
 				      <property name="inverted">False</property>
 				      <property name="adjustment">0.40000000596 0 0.899999976158 0.00999999977648 0.10000000149 0</property>
-				      <signal name="value_changed" handler="on_define_search_value_changed" last_modification_time="Wed, 13 Sep 2006 20:47:42 GMT"/>
 				    </widget>
 				    <packing>
 				      <property name="left_attach">1</property>
@@ -628,7 +615,6 @@
 				      <property name="update_policy">GTK_UPDATE_CONTINUOUS</property>
 				      <property name="inverted">False</property>
 				      <property name="adjustment">1 0 5 1 1 0</property>
-				      <signal name="value_changed" handler="on_minSharpness_value_changed" last_modification_time="Thu, 26 Oct 2006 16:29:55 GMT"/>
 				    </widget>
 				    <packing>
 				      <property name="left_attach">1</property>
@@ -648,7 +634,6 @@
 				      <property name="use_underline">True</property>
 				      <property name="relief">GTK_RELIEF_NORMAL</property>
 				      <property name="focus_on_click">True</property>
-				      <signal name="clicked" handler="on_recomputePreview_clicked" last_modification_time="Thu, 26 Oct 2006 16:30:07 GMT"/>
 				    </widget>
 				    <packing>
 				      <property name="left_attach">2</property>
@@ -830,8 +815,6 @@
 			      <child>
 				<widget class="GtkDrawingArea" id="simulatedSearch">
 				  <property name="visible">True</property>
-				  <signal name="expose_event" handler="on_simulatedSearch_expose_event" last_modification_time="Mon, 10 Jul 2006 15:45:00 GMT"/>
-				  <signal name="configure_event" handler="on_simulatedSearch_configure_event" last_modification_time="Mon, 10 Jul 2006 15:55:19 GMT"/>
 				</widget>
 			      </child>
 			    </widget>
@@ -890,7 +873,6 @@
 				  <property name="has_frame">True</property>
 				  <property name="invisible_char">•</property>
 				  <property name="activates_default">True</property>
-				  <signal name="changed" handler="on_searchName_changed" last_modification_time="Mon, 13 Nov 2006 19:03:03 GMT"/>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -910,7 +892,6 @@
 				  <property name="use_stock">True</property>
 				  <property name="relief">GTK_RELIEF_NORMAL</property>
 				  <property name="focus_on_click">True</property>
-				  <signal name="clicked" handler="on_saveSearchButton_clicked" last_modification_time="Mon, 10 Jul 2006 19:20:30 GMT"/>
 				</widget>
 				<packing>
 				  <property name="padding">0</property>
@@ -1063,7 +1044,6 @@
 					  <property name="can_focus">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
-					  <signal name="clicked" handler="on_startSearch_clicked" last_modification_time="Mon, 10 Jul 2006 20:12:03 GMT"/>
 
 					  <child>
 					    <widget class="GtkAlignment" id="alignment25">
@@ -1140,7 +1120,6 @@
 					  <property name="use_underline">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
-					  <signal name="clicked" handler="on_defineScope_clicked" last_modification_time="Tue, 02 Oct 2007 18:50:26 GMT"/>
 					</widget>
 				      </child>
 				    </widget>
@@ -1226,7 +1205,6 @@
 					  <property name="selection_mode">GTK_SELECTION_BROWSE</property>
 					  <property name="orientation">GTK_ORIENTATION_VERTICAL</property>
 					  <property name="reorderable">False</property>
-					  <signal name="selection_changed" handler="on_searchResults_selection_changed" last_modification_time="Wed, 06 Sep 2006 07:00:32 GMT"/>
 					</widget>
 				      </child>
 				    </widget>
@@ -1251,7 +1229,6 @@
 					  <property name="can_focus">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
-					  <signal name="clicked" handler="on_stopSearch_clicked" last_modification_time="Mon, 07 Aug 2006 03:58:08 GMT"/>
 
 					  <child>
 					    <widget class="GtkAlignment" id="alignment24">
@@ -1328,7 +1305,6 @@
 					  <property name="use_stock">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
-					  <signal name="clicked" handler="on_clearSearch_clicked" last_modification_time="Mon, 10 Jul 2006 19:48:41 GMT"/>
 					</widget>
 				      </child>
 
@@ -1339,7 +1315,6 @@
 					  <property name="can_focus">True</property>
 					  <property name="relief">GTK_RELIEF_NORMAL</property>
 					  <property name="focus_on_click">True</property>
-					  <signal name="clicked" handler="on_generateHistogram_clicked" last_modification_time="Wed, 06 Sep 2006 16:25:56 GMT"/>
 
 					  <child>
 					    <widget class="GtkAlignment" id="alignment27">
@@ -1518,13 +1493,6 @@
 			    <widget class="GtkDrawingArea" id="selectedResult">
 			      <property name="visible">True</property>
 			      <property name="events">GDK_POINTER_MOTION_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK</property>
-			      <signal name="expose_event" handler="on_selectedResult_expose_event" last_modification_time="Wed, 06 Sep 2006 06:53:01 GMT"/>
-			      <signal name="button_press_event" handler="on_selectedResult_button_press_event" last_modification_time="Wed, 06 Sep 2006 06:53:48 GMT"/>
-			      <signal name="button_release_event" handler="on_selectedResult_button_release_event" last_modification_time="Wed, 06 Sep 2006 06:53:52 GMT"/>
-			      <signal name="motion_notify_event" handler="on_selectedResult_motion_notify_event" last_modification_time="Wed, 06 Sep 2006 06:56:55 GMT"/>
-			      <signal name="configure_event" handler="on_selectedResult_configure_event" last_modification_time="Wed, 06 Sep 2006 06:57:12 GMT"/>
-			      <signal name="enter_notify_event" handler="on_selectedResult_enter_notify_event" last_modification_time="Wed, 06 Sep 2006 08:30:25 GMT"/>
-			      <signal name="leave_notify_event" handler="on_selectedResult_leave_notify_event" last_modification_time="Wed, 06 Sep 2006 08:30:30 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>
@@ -1658,7 +1626,6 @@
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <property name="focus_on_map">True</property>
   <property name="urgency_hint">False</property>
-  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Wed, 06 Sep 2006 16:54:32 GMT"/>
 
   <child>
     <widget class="GtkScrolledWindow" id="scrolledwindow12">
@@ -1703,7 +1670,6 @@
   <property name="website_label" translatable="yes"></property>
   <property name="authors">Adam Goode &lt;agoode@andrew.cmu.edu&gt;</property>
   <property name="translator_credits" translatable="yes" comments="TRANSLATORS: Replace this string with your names, one name per line.">translator-credits</property>
-  <signal name="delete_event" handler="gtk_widget_hide" last_modification_time="Tue, 12 Sep 2006 17:46:02 GMT"/>
 </widget>
 
 </glade-interface>
