@@ -14,9 +14,9 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.IOException;
@@ -38,12 +38,12 @@ class ProcessedImage {
         return circles;
     }
 
-    public int[] getHitmap() {
-        return hitmap;
-    }
-
     public double getScale() {
         return scale;
+    }
+
+    public int getCircleForPoint(int x, int y) {
+        return hitmap[y * allocW + x];
     }
 
     final private Pixbuf original;
@@ -56,9 +56,9 @@ class ProcessedImage {
 
     double scale;
 
-    int maxW;
+    int allocW;
 
-    int maxH;
+    int allocH;
 
     private ProcessedImage(Pixbuf original, List<Circle> circles, int maxW,
             int maxH) {
@@ -68,37 +68,38 @@ class ProcessedImage {
         rescale(maxW, maxH);
     }
 
-    public void rescale(int maxW, int maxH) {
-        if ((this.maxW == maxW) && (this.maxH == maxH)) {
+    public void rescale(int allocW, int allocH) {
+        if ((this.allocW == allocW) && (this.allocH == allocH)) {
             return;
         }
 
-        this.maxW = maxW;
-        this.maxH = maxH;
+        this.allocW = allocW;
+        this.allocH = allocH;
 
         double aspect = (double) original.getWidth()
                 / (double) original.getHeight();
 
-        double windowAspect = (double) maxW / (double) maxH;
+        double windowAspect = (double) allocW / (double) allocH;
 
-        int w = maxW;
-        int h = maxH;
+        int w = allocW;
+        int h = allocH;
 
         // is window wider than pixbuf?
         if (aspect < windowAspect) {
             // calc width from height
             w = (int) (h * aspect);
-            scale = (double) maxH / (double) original.getHeight();
+            scale = (double) allocH / (double) original.getHeight();
         } else {
             // calc height from width
             h = (int) (w / aspect);
-            scale = (double) maxW / (double) original.getWidth();
+            scale = (double) allocW / (double) original.getWidth();
         }
 
         scaled = original.scale(w, h, InterpType.BILINEAR);
 
         // generate hitmap
-        hitmap = createHitmap(circles, w, h, scale);
+        hitmap = createHitmap(circles, allocW, allocH, scale);
+
     }
 
     public static ProcessedImage createProcessedImage(Pixbuf image,
@@ -117,22 +118,30 @@ class ProcessedImage {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_OFF);
 
-        int color = 1;
+        // clear
+        g.setComposite(AlphaComposite.Src);
+        g.setColor(new Color(-1, true));
+        g.fillRect(0, 0, w, h);
+
+        // draw circles
+        Shape circle = new Ellipse2D.Double(-1, -1, 2, 2);
+
+        int color = 0;
         for (Circle c : circles) {
-            Graphics2D g2 = (Graphics2D) g.create();
+            g.setColor(new Color(color, true));
 
-            g2.setColor(new Color(color));
-            g2.scale(scale, scale);
+            AffineTransform at = new AffineTransform();
+            at.scale(scale, scale);
 
-            g2.translate(c.getX(), c.getY());
-            g2.rotate(c.getT());
-            g2.scale(c.getA(), c.getB());
+            at.translate(c.getX(), c.getY());
+            at.rotate(c.getT());
+            at.scale(c.getA(), c.getB());
 
-            g2.drawOval(1, 1, 2, 2);
-            g2.fillOval(1, 1, 2, 2);
+            Shape s = at.createTransformedShape(circle);
+            g.fill(s);
+            g.draw(s);
 
             color++;
-            g2.dispose();
         }
 
         g.dispose();
