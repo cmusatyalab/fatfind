@@ -77,6 +77,8 @@ public class Main {
 
     final private Button recomputePreview;
 
+    final private Entry searchName;
+
     final private DataColumnString savedSearchName = new DataColumnString();
 
     final private DataColumnReference savedSearchObject = new DataColumnReference();
@@ -142,6 +144,7 @@ public class Main {
         radiusLower = (HScale) glade.getWidget("radiusLower");
         radiusUpper = (HScale) glade.getWidget("radiusUpper");
         maxEccentricity = (HScale) glade.getWidget("maxEccentricity");
+        searchName = (Entry) glade.getWidget("searchName");
 
         dir = index.getParentFile();
 
@@ -452,22 +455,39 @@ public class Main {
         });
 
         // searchName
-        Entry searchName = (Entry) glade.getWidget("searchName");
         searchName.connect(new Changed() {
-
             @Override
             public void onChanged(Editable source) {
-                // TODO
+                // change the sensitivity of the save as button, to allow
+                // clicking only when the user has changed to non-empty string
+                String text = searchName.getText();
+                saveSearchButton.setSensitive(!text.isEmpty());
             }
         });
 
         // saveSearchButton
         saveSearchButton.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
+                if (referenceCircle == null) {
+                    return;
+                }
 
+                // scale by reference
+                double a = referenceCircle.getA();
+                double b = referenceCircle.getB();
+                double rMin = radiusLower.getValue() * Math.min(a, b);
+                double rMax = radiusUpper.getValue() * Math.max(a, b);
+
+                String name = searchName.getText();
+                SavedSearch ss = new SavedSearch(name, rMin, rMax,
+                        maxEccentricity.getValue(), minSharpness.getValue());
+
+                TreeIter iter = savedSearchStore.appendRow();
+                savedSearchStore.setValue(iter, savedSearchName, name);
+                savedSearchStore.setValue(iter, savedSearchObject, ss);
+
+                saveSearchButton.setSensitive(false);
             }
         });
 
@@ -675,6 +695,8 @@ public class Main {
             // clear the text
             text.setLabel("");
             text2.setLabel("");
+
+            saveSearchButton.setSensitive(false);
         } else {
             // set text
             double r = c.getQuadraticMeanRadius();
