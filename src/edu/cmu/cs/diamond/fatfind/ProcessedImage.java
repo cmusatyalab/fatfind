@@ -59,7 +59,7 @@ class ProcessedImage {
 
     private Pixbuf scaled;
 
-    final private List<Circle> circles;
+    private List<Circle> circles;
 
     private int hitmap[];
 
@@ -81,15 +81,13 @@ class ProcessedImage {
 
     public void rescale() {
         Allocation a = widget.getAllocation();
-        int allocW = a.getWidth();
-        int allocH = a.getHeight();
 
-        if ((this.allocW == allocW) && (this.allocH == allocH)) {
+        if ((allocW == a.getWidth()) && (allocH == a.getHeight())) {
             return;
         }
 
-        this.allocW = allocW;
-        this.allocH = allocH;
+        allocW = a.getWidth();
+        allocH = a.getHeight();
 
         double aspect = (double) original.getWidth()
                 / (double) original.getHeight();
@@ -113,14 +111,14 @@ class ProcessedImage {
         scaled = original.scale(w, h, InterpType.BILINEAR);
 
         // generate hitmap
-        hitmap = createHitmap(circles, allocW, allocH, scale);
+        updateHitmap();
 
         widget.queueDraw();
     }
 
-    private static int[] createHitmap(List<Circle> circles, int w, int h,
-            double scale) {
-        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+    private void updateHitmap() {
+        BufferedImage img = new BufferedImage(allocW, allocH,
+                BufferedImage.TYPE_INT_RGB);
 
         Graphics2D g = img.createGraphics();
 
@@ -130,7 +128,7 @@ class ProcessedImage {
         // clear
         g.setComposite(AlphaComposite.Src);
         g.setColor(new Color(-1, true));
-        g.fillRect(0, 0, w, h);
+        g.fillRect(0, 0, allocW, allocH);
 
         // draw circles
         Shape circle = new Ellipse2D.Double(-1, -1, 2, 2);
@@ -155,7 +153,7 @@ class ProcessedImage {
 
         g.dispose();
 
-        return ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
+        hitmap = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
     }
 
     private void drawCircles(Context cr, Circle.Filter filter) {
@@ -165,11 +163,17 @@ class ProcessedImage {
         }
     }
 
-    void setShowCircles(boolean state) {
+    public void setShowCircles(boolean state) {
         if (state != showCircles) {
             showCircles = state;
             widget.queueDraw();
         }
+    }
+
+    public void setCircles(List<Circle> circles) {
+        this.circles = circles;
+        updateHitmap();
+        widget.queueDraw();
     }
 
     public void drawToWidget(Circle.Filter filter) {

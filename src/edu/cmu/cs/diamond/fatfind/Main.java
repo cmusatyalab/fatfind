@@ -388,21 +388,29 @@ public class Main {
         maxEccentricity.connect(searchValueChanged);
 
         // minSharpness
-        HScale minSharpness = (HScale) glade.getWidget("minSharpness");
         minSharpness.connect(new ValueChanged() {
-
             @Override
             public void onValueChanged(Range source) {
-                // TODO Auto-generated method stub
+                double newSharpness = minSharpness.getValue();
+                recomputePreview
+                        .setSensitive((currentSharpness != newSharpness)
+                                && (calibrationImage != null));
             }
         });
 
         // recomputePreview
         recomputePreview.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
+                currentSharpness = minSharpness.getValue();
+                try {
+                    List<Circle> circles = Circle.createFromPixbuf(
+                            calibrationImage.getOriginal(), currentSharpness);
+                    calibrationImage.setCircles(circles);
+                    simulatedSearchImage.setCircles(circles);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
