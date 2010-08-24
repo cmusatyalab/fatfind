@@ -14,8 +14,6 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
@@ -26,8 +24,7 @@ class Result {
     final private ObjectIdentifier id;
 
     public Result(List<Circle> circles, ObjectIdentifier id) {
-        this.circles = Collections.unmodifiableList(new ArrayList<Circle>(
-                circles));
+        this.circles = circles;
         this.id = id;
     }
 

@@ -16,6 +16,7 @@ package edu.cmu.cs.diamond.fatfind;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.freedesktop.cairo.Context;
@@ -134,7 +135,7 @@ class Circle {
                         Float.parseFloat(items[3]), Float.parseFloat(items[4]),
                         Boolean.parseBoolean(items[5])));
             }
-            return circles;
+            return Collections.unmodifiableList(circles);
         } finally {
             if (p != null) {
                 p.destroy();
