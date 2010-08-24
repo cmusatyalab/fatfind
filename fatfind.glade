@@ -1656,9 +1656,10 @@
 </widget>
 
 <widget class="GtkAboutDialog" id="aboutdialog1">
+  <property name="border_width">5</property>
   <property name="destroy_with_parent">False</property>
   <property name="name" translatable="yes">FatFind</property>
-  <property name="copyright" translatable="yes">Copyright © 2006 Carnegie Mellon University</property>
+  <property name="copyright" translatable="yes">Copyright © 2006, 2010 Carnegie Mellon University</property>
   <property name="comments" translatable="yes">A Diamond application for adipocyte image exploration.</property>
   <property name="license" translatable="yes">This program and the accompanying materials are made available under the terms of the Eclipse Public License v1.0 which accompanies this distribution in the file named LICENSE.</property>
   <property name="wrap_license">True</property>
