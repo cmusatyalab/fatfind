@@ -343,7 +343,9 @@ public class Main {
         selectedImage.connect(new MotionNotifyEvent() {
             @Override
             public boolean onMotionNotifyEvent(Widget source, EventMotion event) {
-                calibrationImage.setShowCircles(true);
+                if (calibrationImage != null) {
+                    calibrationImage.setShowCircles(true);
+                }
                 return false;
             }
         });
@@ -352,7 +354,9 @@ public class Main {
 
             @Override
             public boolean onEnterNotifyEvent(Widget source, EventCrossing event) {
-                calibrationImage.setShowCircles(true);
+                if (calibrationImage != null) {
+                    calibrationImage.setShowCircles(true);
+                }
                 return false;
             }
         });
@@ -360,7 +364,9 @@ public class Main {
         selectedImage.connect(new LeaveNotifyEvent() {
             @Override
             public boolean onLeaveNotifyEvent(Widget source, EventCrossing event) {
-                calibrationImage.setShowCircles(false);
+                if (calibrationImage != null) {
+                    calibrationImage.setShowCircles(false);
+                }
                 return false;
             }
         });
