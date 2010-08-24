@@ -180,6 +180,8 @@ class ProcessedImage {
         cr.setSource(getScaled(), 0, 0);
         cr.paint();
 
-        drawCircles(cr, filter);
+        if (showCircles) {
+            drawCircles(cr, filter);
+        }
     }
 }

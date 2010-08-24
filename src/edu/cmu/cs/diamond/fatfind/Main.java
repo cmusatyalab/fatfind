@@ -342,7 +342,7 @@ public class Main {
         selectedImage.connect(new MotionNotifyEvent() {
             @Override
             public boolean onMotionNotifyEvent(Widget source, EventMotion event) {
-                // TODO Auto-generated method stub
+                calibrationImage.setShowCircles(true);
                 return false;
             }
         });
@@ -351,16 +351,15 @@ public class Main {
 
             @Override
             public boolean onEnterNotifyEvent(Widget source, EventCrossing event) {
-                // TODO Auto-generated method stub
+                calibrationImage.setShowCircles(true);
                 return false;
             }
         });
 
         selectedImage.connect(new LeaveNotifyEvent() {
-
             @Override
             public boolean onLeaveNotifyEvent(Widget source, EventCrossing event) {
-                // TODO Auto-generated method stub
+                calibrationImage.setShowCircles(false);
                 return false;
             }
         });
