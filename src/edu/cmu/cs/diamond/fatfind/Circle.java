@@ -18,22 +18,39 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.freedesktop.cairo.Context;
 import org.gnome.gdk.Pixbuf;
 
 class Circle {
-    final private float x;
+    public interface Filter {
+        boolean filter(Circle c);
+    }
 
-    final private float y;
+    public static Filter FILTER_BY_IN_RESULT = new Filter() {
+        @Override
+        public boolean filter(Circle c) {
+            return c.isInResult();
+        }
+    };
 
-    final private float a;
+    public enum Fill {
+        SOLID, DASHED, HAIRLINE;
+    }
 
-    final private float b;
+    final private double x;
 
-    final private float t;
+    final private double y;
+
+    final private double a;
+
+    final private double b;
+
+    final private double t;
 
     final private boolean inResult;
 
-    public Circle(float x, float y, float a, float b, float t, boolean inResult) {
+    public Circle(double x, double y, double a, double b, double t,
+            boolean inResult) {
         this.x = x;
         this.y = y;
         this.a = a;
@@ -42,23 +59,23 @@ class Circle {
         this.inResult = inResult;
     }
 
-    public float getX() {
+    public double getX() {
         return x;
     }
 
-    public float getY() {
+    public double getY() {
         return y;
     }
 
-    public float getA() {
+    public double getA() {
         return a;
     }
 
-    public float getB() {
+    public double getB() {
         return b;
     }
 
-    public float getT() {
+    public double getT() {
         return t;
     }
 
@@ -135,5 +152,74 @@ class Circle {
                 }
             }
         }
+    }
+
+    void draw(Context cr, double scale, Fill fill) {
+        // draw
+        cr.save();
+        cr.scale(scale, scale);
+
+        cr.translate(getX(), getY());
+        cr.rotate(getT());
+        cr.scale(getA(), getB());
+
+        cr.moveTo(1.0, 0.0);
+        cr.arc(0.0, 0.0, 1.0, 0.0, 2 * Math.PI);
+
+        cr.restore();
+
+        switch (fill) {
+        case SOLID:
+            // show fill, no dash
+            cr.setLineWidth(2.0);
+            cr.setDash(new double[0]);
+            cr.setSource(1.0, 0.0, 0.0);
+            cr.strokePreserve();
+            cr.setSource(1.0, 0.0, 0.0, 0.2);
+            cr.fill();
+            break;
+
+        case DASHED:
+            cr.setLineWidth(1.0);
+            cr.setDash(new double[] { 5.0 });
+            cr.setSource(1.0, 0.0, 0.0);
+            cr.stroke();
+            break;
+
+        case HAIRLINE:
+            cr.setLineWidth(1.0);
+            cr.setDash(new double[0]);
+            cr.setSource(1.0, 0.0, 0.0);
+            cr.stroke();
+            break;
+        }
+    }
+
+    public double getQuadraticMeanRadius() {
+        double aa;
+        double bb;
+        if (b > a) {
+            aa = b;
+            bb = a;
+        } else {
+            aa = a;
+            bb = b;
+        }
+
+        return Math.sqrt((3.0 * aa * aa + bb * bb) / 4.0);
+    }
+
+    public double getEccentricity() {
+        double aa;
+        double bb;
+        if (b > a) {
+            aa = b;
+            bb = a;
+        } else {
+            aa = a;
+            bb = b;
+        }
+
+        return Math.sqrt(1 - ((bb * bb) / (aa * aa)));
     }
 }

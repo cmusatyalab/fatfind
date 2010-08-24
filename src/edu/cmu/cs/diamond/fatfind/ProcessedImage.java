@@ -19,11 +19,13 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.io.IOException;
 import java.util.List;
 
+import org.freedesktop.cairo.Context;
 import org.gnome.gdk.InterpType;
 import org.gnome.gdk.Pixbuf;
+import org.gnome.gtk.Allocation;
+import org.gnome.gtk.Widget;
 
 class ProcessedImage {
     public Pixbuf getOriginal() {
@@ -42,11 +44,18 @@ class ProcessedImage {
         return scale;
     }
 
-    public int getCircleForPoint(int x, int y) {
-        return hitmap[y * allocW + x];
+    public Circle getCircleForPoint(int x, int y) {
+        int index = hitmap[y * allocW + x];
+        if (index == -1) {
+            return null;
+        } else {
+            return circles.get(index);
+        }
     }
 
     final private Pixbuf original;
+
+    final private Widget widget;
 
     private Pixbuf scaled;
 
@@ -60,15 +69,21 @@ class ProcessedImage {
 
     int allocH;
 
-    private ProcessedImage(Pixbuf original, List<Circle> circles, int maxW,
-            int maxH) {
+    boolean showCircles;
+
+    public ProcessedImage(Widget widget, Pixbuf original, List<Circle> circles) {
+        this.widget = widget;
         this.original = original;
         this.circles = circles;
 
-        rescale(maxW, maxH);
+        rescale();
     }
 
-    public void rescale(int allocW, int allocH) {
+    public void rescale() {
+        Allocation a = widget.getAllocation();
+        int allocW = a.getWidth();
+        int allocH = a.getHeight();
+
         if ((this.allocW == allocW) && (this.allocH == allocH)) {
             return;
         }
@@ -100,13 +115,7 @@ class ProcessedImage {
         // generate hitmap
         hitmap = createHitmap(circles, allocW, allocH, scale);
 
-    }
-
-    public static ProcessedImage createProcessedImage(Pixbuf image,
-            double minSharpness, int maxW, int maxH) throws IOException {
-        List<Circle> circles = Circle.createFromPixbuf(image, minSharpness);
-
-        return new ProcessedImage(image, circles, maxW, maxH);
+        widget.queueDraw();
     }
 
     private static int[] createHitmap(List<Circle> circles, int w, int h,
@@ -147,5 +156,30 @@ class ProcessedImage {
         g.dispose();
 
         return ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
+    }
+
+    private void drawCircles(Context cr, Circle.Filter filter) {
+        for (Circle c : circles) {
+            c.draw(cr, scale, filter.filter(c) ? Circle.Fill.SOLID
+                    : Circle.Fill.DASHED);
+        }
+    }
+
+    void setShowCircles(boolean state) {
+        if (state != showCircles) {
+            showCircles = state;
+            widget.queueDraw();
+        }
+    }
+
+    public void drawToWidget(Circle.Filter filter) {
+        rescale();
+
+        Context cr = new Context(widget.getWindow());
+
+        cr.setSource(getScaled(), 0, 0);
+        cr.paint();
+
+        drawCircles(cr, filter);
     }
 }
