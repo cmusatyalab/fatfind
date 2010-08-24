@@ -53,4 +53,10 @@ class SavedSearch {
     public double getMinSharpness() {
         return minSharpness;
     }
+
+    @Override
+    public String toString() {
+        return String.format("%s: [%g, %g, %g, %g]", searchName, rMin, rMax,
+                maxEccentricity, minSharpness);
+    }
 }
