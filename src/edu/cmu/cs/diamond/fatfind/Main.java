@@ -288,6 +288,7 @@ public class Main {
                         // draw simulated search
                         simulatedSearchImage = new ProcessedImage(
                                 simulatedSearch, calibrationPix, circles);
+                        simulatedSearchImage.setShowCircles(true);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } finally {
