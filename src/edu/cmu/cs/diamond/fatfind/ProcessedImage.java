@@ -26,6 +26,8 @@ import org.gnome.gdk.InterpType;
 import org.gnome.gdk.Pixbuf;
 import org.gnome.gtk.Allocation;
 import org.gnome.gtk.Widget;
+import org.gnome.pango.FontDescription;
+import org.gnome.pango.Layout;
 
 class ProcessedImage {
     public Pixbuf getOriginal() {
@@ -89,6 +91,10 @@ class ProcessedImage {
 
     boolean showCircles;
 
+    public static ProcessedImage createBusyImage(Widget widget) {
+        return new ProcessedImage(widget, null, null);
+    }
+
     public ProcessedImage(Widget widget, Pixbuf original, List<Circle> circles) {
         this.widget = widget;
         this.original = original;
@@ -106,6 +112,10 @@ class ProcessedImage {
 
         allocW = a.getWidth();
         allocH = a.getHeight();
+
+        if (original == null) {
+            return;
+        }
 
         double aspect = (double) original.getWidth()
                 / (double) original.getHeight();
@@ -199,11 +209,23 @@ class ProcessedImage {
 
         Context cr = new Context(widget.getWindow());
 
-        cr.setSource(getScaled(), 0, 0);
-        cr.paint();
+        if (original == null) {
+            // "busy" image
+            Layout layout = new Layout(cr);
+            layout.setFontDescription(new FontDescription("Sans"));
+            layout.setText("Processing...");
+            int w = layout.getPixelWidth();
+            int h = layout.getPixelHeight();
 
-        if (showCircles) {
-            drawCircles(cr, filter);
+            cr.moveTo(allocW / 2 - w / 2, allocH / 2 - h / 2);
+            cr.showLayout(layout);
+        } else {
+            cr.setSource(getScaled(), 0, 0);
+            cr.paint();
+
+            if (showCircles) {
+                drawCircles(cr, filter);
+            }
         }
     }
 

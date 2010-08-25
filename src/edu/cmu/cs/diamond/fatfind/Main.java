@@ -115,9 +115,9 @@ public class Main {
             new DataColumn[] { calibrationImagesThumbnail,
                     calibrationImagesFilename });
 
-    private ProcessedImage calibrationImage;
+    private volatile ProcessedImage calibrationImage;
 
-    private ProcessedImage simulatedSearchImage;
+    private volatile ProcessedImage simulatedSearchImage;
 
     private ProcessedImage selectedResultImage;
 
@@ -311,33 +311,53 @@ public class Main {
                             calibrationImagesFilename);
 
                     try {
-                        Pixbuf calibrationPix = new Pixbuf(new File(dir,
+                        final Pixbuf calibrationPix = new Pixbuf(new File(dir,
                                 filename).getPath());
-
-                        // busy cursor
-                        // XXX
-                        fatfind.getWindow().setCursor(Cursor.BUSY);
-
-                        // compute the circles
-                        List<Circle> circles = Circle.createFromPixbuf(
-                                calibrationPix, 1.0);
-                        calibrationImage = new ProcessedImage(selectedImage,
-                                calibrationPix, circles);
-
                         // reset simulated search sharpness
                         resetSharpness();
 
-                        // draw simulated search
-                        simulatedSearchImage = new ProcessedImage(
-                                simulatedSearch, calibrationPix, circles);
-                        simulatedSearchImage.setShowCircles(true);
+                        // show busy
+                        calibrationImage = ProcessedImage
+                                .createBusyImage(selectedImage);
+                        simulatedSearchImage = ProcessedImage
+                                .createBusyImage(simulatedSearch);
+                        selectedImage.queueDraw();
+                        simulatedSearch.queueDraw();
+                        calibrationImages.setSensitive(false);
+
+                        // compute the circles in the background
+                        executor.submit(new Runnable() {
+                            @Override
+                            public void run() {
+                                List<Circle> circles = null;
+                                try {
+                                    circles = Circle.createFromPixbuf(
+                                            calibrationPix, 1.0);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+
+                                calibrationImage = new ProcessedImage(
+                                        selectedImage, calibrationPix, circles);
+
+                                // draw simulated search
+                                simulatedSearchImage = new ProcessedImage(
+                                        simulatedSearch, calibrationPix,
+                                        circles);
+                                simulatedSearchImage.setShowCircles(true);
+
+                                selectedImage.queueDraw();
+                                simulatedSearch.queueDraw();
+
+                                calibrationImages.setSensitive(true);
+                            }
+                        });
                     } catch (IOException e) {
                         e.printStackTrace();
-                    } finally {
-                        fatfind.getWindow().setCursor(Cursor.NORMAL);
                     }
                 }
             }
+
         });
 
         // aboutdialog1
