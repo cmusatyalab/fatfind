@@ -14,6 +14,12 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Shape;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -154,6 +160,41 @@ class Circle {
                 } catch (IOException ignore) {
                 }
             }
+        }
+    }
+
+    void draw(Graphics2D g, double scale, Fill fill) {
+        Shape circle = new Ellipse2D.Double(-1, -1, 2, 2);
+
+        AffineTransform at = new AffineTransform();
+        at.scale(scale, scale);
+
+        at.translate(x, y);
+        at.rotate(t);
+        at.scale(a, b);
+
+        Shape s = at.createTransformedShape(circle);
+        switch (fill) {
+        case DASHED:
+            g.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_BUTT,
+                    BasicStroke.JOIN_BEVEL, 1f, new float[] { 5.0f }, 0));
+            g.setPaint(Color.RED);
+            g.draw(s);
+            break;
+
+        case SOLID:
+            g.setStroke(new BasicStroke(2.0f));
+            g.setPaint(new Color(1.0f, 0.0f, 0.0f, 0.2f));
+            g.fill(s);
+            g.setPaint(Color.RED);
+            g.draw(s);
+            break;
+
+        case HAIRLINE:
+            g.setStroke(new BasicStroke(1.0f));
+            g.setPaint(Color.RED);
+            g.draw(s);
+            break;
         }
     }
 

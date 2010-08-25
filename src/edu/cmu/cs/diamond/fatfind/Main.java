@@ -14,9 +14,12 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import javax.imageio.ImageIO;
 
 import org.freedesktop.cairo.Context;
 import org.gnome.gdk.*;
@@ -31,7 +34,6 @@ import org.gnome.gtk.Range.ValueChanged;
 import org.gnome.gtk.Widget.*;
 
 import edu.cmu.cs.diamond.opendiamond.*;
-import edu.cmu.cs.diamond.opendiamond.Result;
 
 public class Main {
     final private Window fatfind;
@@ -509,7 +511,6 @@ public class Main {
         startSearch.connect(new Clicked() {
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
                 TreeSelection selection = definedSearches.getSelection();
                 TreeIter iter = selection.getSelected();
                 if (iter == null) {
@@ -714,21 +715,6 @@ public class Main {
         defineRefImage.connect(drawReferenceCircle);
     }
 
-    private static String makeThumbnailTitle(List<Circle> circles) {
-        int circlesInResult = 0;
-        for (Circle c : circles) {
-            if (c.isInResult()) {
-                circlesInResult++;
-            }
-        }
-
-        if (circlesInResult == 1) {
-            return "1 circle";
-        } else {
-            return circlesInResult + " circles";
-        }
-    }
-
     private void runBackgroundSearch(final Search search) {
         statsExecutor = Executors.newSingleThreadScheduledExecutor();
         statsFuture = statsExecutor.scheduleWithFixedDelay(new Runnable() {
@@ -769,18 +755,29 @@ public class Main {
                 Result r;
                 while (((r = search.getNextResult()) != null)
                         && (displayedObjects <= 100)) {
+                    // generate internal result object
                     List<Circle> circles = Circle.createFromDiamondResult(r
                             .getValue("circle-data"));
 
-                    Pixbuf thumb = new Pixbuf(r.getValue("thumbnail.jpeg"));
+                    ObjectIdentifier id = r.getObjectIdentifier();
 
+                    BufferedImage originalThumb = ImageIO
+                            .read(new ByteArrayInputStream(r
+                                    .getValue("thumbnail.jpeg")));
+
+                    int w = Util.extractInt(r.getValue("_cols.int"));
+
+                    FatFindResult ffr = new FatFindResult(circles, id,
+                            originalThumb, w);
+
+                    // add to Gtk
                     TreeIter iter = foundItems.appendRow();
-                    foundItems.setValue(iter, foundItemThumbnail, thumb);
-                    foundItems.setValue(iter, foundItemTitle,
-                            makeThumbnailTitle(circles));
-                    foundItems.setValue(iter, foundItemResult,
-                            new edu.cmu.cs.diamond.fatfind.Result(circles, r
-                                    .getObjectIdentifier()));
+
+                    foundItems.setValue(iter, foundItemThumbnail, ffr
+                            .createThumbnail());
+                    foundItems.setValue(iter, foundItemTitle, ffr
+                            .createThumbnailTitle());
+                    foundItems.setValue(iter, foundItemResult, ffr);
 
                     displayedObjects++;
                 }
