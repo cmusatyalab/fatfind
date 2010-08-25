@@ -135,32 +135,32 @@ public class Main {
     private volatile Search search;
 
     private Main(XML glade, File index) throws IOException {
-        fatfind = (Window) glade.getWidget("fatfind");
-        selectedImage = (DrawingArea) glade.getWidget("selectedImage");
-        calibrateRefImage = (DrawingArea) glade.getWidget("calibrateRefImage");
-        calibrateRefInfo = (Label) glade.getWidget("calibrateRefInfo");
-        defineRefImage = (DrawingArea) glade.getWidget("defineRefImage");
-        defineRefInfo = (Label) glade.getWidget("defineRefInfo");
-        simulatedSearch = (DrawingArea) glade.getWidget("simulatedSearch");
-        aboutdialog1 = (AboutDialog) glade.getWidget("aboutdialog1");
-        saveSearchButton = (Button) glade.getWidget("saveSearchButton");
-        startSearch = (Button) glade.getWidget("startSearch");
-        stopSearch = (Button) glade.getWidget("stopSearch");
-        defineScope = (Button) glade.getWidget("defineScope");
-        searchResults = (IconView) glade.getWidget("searchResults");
-        clearSearch = (Button) glade.getWidget("clearSearch");
-        generateHistogram = (Button) glade.getWidget("generateHistogram");
-        selectedResult = (DrawingArea) glade.getWidget("selectedResult");
-        histogramWindow = (Window) glade.getWidget("histogramWindow");
-        calibrationImages = (IconView) glade.getWidget("calibrationImages");
-        definedSearches = (TreeView) glade.getWidget("definedSearches");
-        minSharpness = (Range) glade.getWidget("minSharpness");
-        recomputePreview = (Button) glade.getWidget("recomputePreview");
-        radiusLower = (HScale) glade.getWidget("radiusLower");
-        radiusUpper = (HScale) glade.getWidget("radiusUpper");
-        maxEccentricity = (HScale) glade.getWidget("maxEccentricity");
-        searchName = (Entry) glade.getWidget("searchName");
-        statsLabel = (Label) glade.getWidget("statsLabel");
+        fatfind = (Window) getWidget(glade, "fatfind");
+        selectedImage = (DrawingArea) getWidget(glade, "selectedImage");
+        calibrateRefImage = (DrawingArea) getWidget(glade, "calibrateRefImage");
+        calibrateRefInfo = (Label) getWidget(glade, "calibrateRefInfo");
+        defineRefImage = (DrawingArea) getWidget(glade, "defineRefImage");
+        defineRefInfo = (Label) getWidget(glade, "defineRefInfo");
+        simulatedSearch = (DrawingArea) getWidget(glade, "simulatedSearch");
+        aboutdialog1 = (AboutDialog) getWidget(glade, "aboutdialog1");
+        saveSearchButton = (Button) getWidget(glade, "saveSearchButton");
+        startSearch = (Button) getWidget(glade, "startSearch");
+        stopSearch = (Button) getWidget(glade, "stopSearch");
+        defineScope = (Button) getWidget(glade, "defineScope");
+        searchResults = (IconView) getWidget(glade, "searchResults");
+        clearSearch = (Button) getWidget(glade, "clearSearch");
+        generateHistogram = (Button) getWidget(glade, "generateHistogram");
+        selectedResult = (DrawingArea) getWidget(glade, "selectedResult");
+        histogramWindow = (Window) getWidget(glade, "histogramWindow");
+        calibrationImages = (IconView) getWidget(glade, "calibrationImages");
+        definedSearches = (TreeView) getWidget(glade, "definedSearches");
+        minSharpness = (Range) getWidget(glade, "minSharpness");
+        recomputePreview = (Button) getWidget(glade, "recomputePreview");
+        radiusLower = (HScale) getWidget(glade, "radiusLower");
+        radiusUpper = (HScale) getWidget(glade, "radiusUpper");
+        maxEccentricity = (HScale) getWidget(glade, "maxEccentricity");
+        searchName = (Entry) getWidget(glade, "searchName");
+        statsLabel = (Label) getWidget(glade, "statsLabel");
 
         dir = index.getParentFile();
 
@@ -171,6 +171,15 @@ public class Main {
         setupSavedSearchStore();
 
         setupResultsStore();
+    }
+
+    private static Widget getWidget(XML glade, String name) {
+        Widget w = glade.getWidget(name);
+        if (w == null) {
+            throw new NullPointerException("widget " + name + " not found");
+        }
+
+        return w;
     }
 
     private void setupResultsStore() {
@@ -255,7 +264,7 @@ public class Main {
         });
 
         // quit1
-        ImageMenuItem quit1 = (ImageMenuItem) glade.getWidget("quit1");
+        ImageMenuItem quit1 = (ImageMenuItem) getWidget(glade, "quit1");
         quit1.connect(new MenuItem.Activate() {
             @Override
             public void onActivate(MenuItem source) {
@@ -264,7 +273,7 @@ public class Main {
         });
 
         // about1
-        ImageMenuItem about1 = (ImageMenuItem) glade.getWidget("about1");
+        ImageMenuItem about1 = (ImageMenuItem) getWidget(glade, "about1");
         about1.connect(new MenuItem.Activate() {
             @Override
             public void onActivate(MenuItem source) {
