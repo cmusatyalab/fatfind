@@ -527,6 +527,7 @@ public class Main {
 
                     stopSearch.setSensitive(true);
                     startSearch.setSensitive(false);
+                    clearSearch.setSensitive(false);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
@@ -573,11 +574,9 @@ public class Main {
 
         // clearSearch
         clearSearch.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
-
+                foundItems.clear();
             }
         });
 
@@ -793,6 +792,7 @@ public class Main {
 
                 stopSearch.setSensitive(false);
                 startSearch.setSensitive(true);
+                clearSearch.setSensitive(true);
 
                 return null;
             }
