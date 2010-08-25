@@ -1035,6 +1035,9 @@ public class Main {
         List<String> dependencies = new ArrayList<String>();
         dependencies.add("RGB");
 
+        List<String> applicationDependencies = new ArrayList<String>();
+        applicationDependencies.add("RGB");
+
         List<String> thumbArgs = new ArrayList<String>();
         thumbArgs.add("150");
         thumbArgs.add("150");
@@ -1050,6 +1053,10 @@ public class Main {
                 createFilterCode("/opt/snapfind/lib/fil_rgb.so"),
                 "f_eval_img2rgb", "f_init_img2rgb", "f_fini_img2rgb", 1,
                 emptyList, emptyList));
+
+        // create reexecute factory (faster to execute)
+        factory = new SearchFactory(filters, applicationDependencies, scope);
+
         filters.add(new Filter("thumbnailer",
                 createFilterCode("/opt/snapfind/lib/fil_thumb.so"),
                 "f_eval_thumbnailer", "f_init_thumbnailer",
@@ -1059,10 +1066,8 @@ public class Main {
                 "f_eval_circles", "f_init_circles", "f_fini_circles", 1,
                 dependencies, circleArgs));
 
-        List<String> applicationDependencies = new ArrayList<String>();
-        applicationDependencies.add("RGB");
-
-        factory = new SearchFactory(filters, applicationDependencies, scope);
+        SearchFactory fullFactory = new SearchFactory(filters,
+                applicationDependencies, scope);
 
         Set<String> pushAttributes = new HashSet<String>();
         pushAttributes.add("thumbnail.jpeg");
@@ -1070,7 +1075,7 @@ public class Main {
         pushAttributes.add("_rows.int");
         pushAttributes.add("_cols.int");
 
-        return factory.createSearch(pushAttributes);
+        return fullFactory.createSearch(pushAttributes);
     }
 
     private static FilterCode createFilterCode(String path) throws IOException {
