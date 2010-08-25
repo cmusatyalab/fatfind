@@ -15,6 +15,8 @@
 package edu.cmu.cs.diamond.fatfind;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -222,5 +224,19 @@ class Circle {
         }
 
         return Math.sqrt(1 - ((bb * bb) / (aa * aa)));
+    }
+
+    public static List<Circle> createFromDiamondResult(byte[] buf) {
+        List<Circle> circles = new ArrayList<Circle>();
+
+        ByteBuffer bb = ByteBuffer.wrap(buf);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        while (bb.hasRemaining()) {
+            circles.add(new Circle(bb.getFloat(), bb.getFloat(), bb.getFloat(),
+                    bb.getFloat(), bb.getFloat(), bb.getInt() != 0));
+        }
+
+        return Collections.unmodifiableList(circles);
     }
 }

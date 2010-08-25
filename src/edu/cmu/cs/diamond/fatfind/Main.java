@@ -14,11 +14,9 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.List;
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.*;
 
 import org.freedesktop.cairo.Context;
 import org.gnome.gdk.*;
@@ -32,7 +30,8 @@ import org.gnome.gtk.IconView.SelectionChanged;
 import org.gnome.gtk.Range.ValueChanged;
 import org.gnome.gtk.Widget.*;
 
-import edu.cmu.cs.diamond.fatfind.Circle.Filter;
+import edu.cmu.cs.diamond.opendiamond.*;
+import edu.cmu.cs.diamond.opendiamond.Result;
 
 public class Main {
     final private Window fatfind;
@@ -79,6 +78,8 @@ public class Main {
 
     final private Entry searchName;
 
+    final private Label statsLabel;
+
     final private DataColumnString savedSearchName = new DataColumnString();
 
     final private DataColumnReference savedSearchObject = new DataColumnReference();
@@ -119,6 +120,18 @@ public class Main {
 
     private final HScale maxEccentricity;
 
+    private CookieMap scope = CookieMap.emptyCookieMap();
+
+    private final ExecutorService executor = Executors.newCachedThreadPool();
+
+    private volatile ScheduledExecutorService statsExecutor;
+
+    private volatile ScheduledFuture<?> statsFuture;
+
+    private volatile int displayedObjects;
+
+    private volatile Search search;
+
     private Main(XML glade, File index) throws IOException {
         fatfind = (Window) glade.getWidget("fatfind");
         selectedImage = (DrawingArea) glade.getWidget("selectedImage");
@@ -145,6 +158,7 @@ public class Main {
         radiusUpper = (HScale) glade.getWidget("radiusUpper");
         maxEccentricity = (HScale) glade.getWidget("maxEccentricity");
         searchName = (Entry) glade.getWidget("searchName");
+        statsLabel = (Label) glade.getWidget("statsLabel");
 
         dir = index.getParentFile();
 
@@ -233,7 +247,7 @@ public class Main {
         fatfind.connect(new Window.DeleteEvent() {
             @Override
             public boolean onDeleteEvent(Widget source, Event event) {
-                Gtk.mainQuit();
+                System.exit(0);
                 return false;
             }
         });
@@ -243,7 +257,7 @@ public class Main {
         quit1.connect(new MenuItem.Activate() {
             @Override
             public void onActivate(MenuItem source) {
-                Gtk.mainQuit();
+                System.exit(0);
             }
         });
 
@@ -422,7 +436,7 @@ public class Main {
             @Override
             public boolean onExposeEvent(Widget source, EventExpose event) {
                 if (simulatedSearchImage != null) {
-                    simulatedSearchImage.drawToWidget(new Filter() {
+                    simulatedSearchImage.drawToWidget(new Circle.Filter() {
                         @Override
                         public boolean filter(Circle c) {
                             if (referenceCircle == null) {
@@ -493,21 +507,43 @@ public class Main {
 
         // startSearch
         startSearch.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
                 // TODO Auto-generated method stub
+                TreeSelection selection = definedSearches.getSelection();
+                TreeIter iter = selection.getSelected();
+                if (iter == null) {
+                    return;
+                }
 
+                SavedSearch ss = (SavedSearch) savedSearchStore.getValue(iter,
+                        savedSearchObject);
+
+                try {
+                    displayedObjects = 0;
+                    search = startSearch(ss);
+                    runBackgroundSearch(search);
+
+                    stopSearch.setSensitive(true);
+                    startSearch.setSensitive(false);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
             }
         });
 
         // defineScope
         defineScope.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
-
+                try {
+                    scope = CookieMap.createDefaultCookieMap();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -523,11 +559,14 @@ public class Main {
 
         // stopSearch
         stopSearch.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
-
+                try {
+                    search.close();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
             }
         });
 
@@ -673,6 +712,155 @@ public class Main {
 
         calibrateRefImage.connect(drawReferenceCircle);
         defineRefImage.connect(drawReferenceCircle);
+    }
+
+    private static String makeThumbnailTitle(List<Circle> circles) {
+        int circlesInResult = 0;
+        for (Circle c : circles) {
+            if (c.isInResult()) {
+                circlesInResult++;
+            }
+        }
+
+        if (circlesInResult == 1) {
+            return "1 circle";
+        } else {
+            return circlesInResult + " circles";
+        }
+    }
+
+    private void runBackgroundSearch(final Search search) {
+        statsExecutor = Executors.newSingleThreadScheduledExecutor();
+        statsFuture = statsExecutor.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    int total = 0;
+                    int processed = 0;
+                    int dropped = 0;
+
+                    Map<String, ServerStatistics> s = search.getStatistics();
+                    for (Map.Entry<String, ServerStatistics> e : s.entrySet()) {
+                        ServerStatistics v = e.getValue();
+                        total += v.getTotalObjects();
+                        processed += v.getProcessedObjects();
+                        dropped += v.getDroppedObjects();
+                    }
+
+                    statsLabel
+                            .setLabel(String
+                                    .format(
+                                            "Total objects: %d, Processed objects: %d, Dropped objects: %d, Displayed objects: %d",
+                                            total, processed, dropped,
+                                            displayedObjects));
+                } catch (SearchClosedException ignore) {
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }, 0, 500, TimeUnit.MILLISECONDS);
+
+        executor.submit(new Callable<java.lang.Object>() {
+            @Override
+            public java.lang.Object call() throws Exception {
+                Result r;
+                while (((r = search.getNextResult()) != null)
+                        && (displayedObjects <= 100)) {
+                    List<Circle> circles = Circle.createFromDiamondResult(r
+                            .getValue("circle-data"));
+
+                    Pixbuf thumb = new Pixbuf(r.getValue("thumbnail.jpeg"));
+
+                    TreeIter iter = foundItems.appendRow();
+                    foundItems.setValue(iter, foundItemThumbnail, thumb);
+                    foundItems.setValue(iter, foundItemTitle,
+                            makeThumbnailTitle(circles));
+                    foundItems.setValue(iter, foundItemResult,
+                            new edu.cmu.cs.diamond.fatfind.Result(circles, r
+                                    .getObjectIdentifier()));
+
+                    displayedObjects++;
+                }
+
+                if (statsExecutor != null) {
+                    statsExecutor.shutdownNow();
+                }
+                if (statsFuture != null) {
+                    statsFuture.cancel(true);
+                }
+
+                search.close();
+
+                stopSearch.setSensitive(false);
+                startSearch.setSensitive(true);
+
+                return null;
+            }
+        });
+    }
+
+    private Search startSearch(SavedSearch ss) throws IOException,
+            InterruptedException {
+        List<String> emptyList = Collections.emptyList();
+
+        List<String> dependencies = new ArrayList<String>();
+        dependencies.add("RGB");
+
+        List<String> thumbArgs = new ArrayList<String>();
+        thumbArgs.add("150");
+        thumbArgs.add("150");
+
+        List<String> circleArgs = new ArrayList<String>();
+        circleArgs.add(Double.toString(ss.getrMin()));
+        circleArgs.add(Double.toString(ss.getrMax()));
+        circleArgs.add(Double.toString(ss.getMaxEccentricity()));
+        circleArgs.add(Double.toString(ss.getMinSharpness()));
+
+        List<Filter> filters = new ArrayList<Filter>();
+        filters.add(new Filter("RGB",
+                createFilterCode("/opt/snapfind/lib/fil_rgb.so"),
+                "f_eval_img2rgb", "f_init_img2rgb", "f_fini_img2rgb", 1,
+                emptyList, emptyList));
+        filters.add(new Filter("thumbnailer",
+                createFilterCode("/opt/snapfind/lib/fil_thumb.so"),
+                "f_eval_thumbnailer", "f_init_thumbnailer",
+                "f_fini_thumbnailer", 1, dependencies, thumbArgs));
+        filters.add(new Filter("circles",
+                createFilterCode("/usr/share/fatfind/filter/fil_circle.so"),
+                "f_eval_circles", "f_init_circles", "f_fini_circles", 1,
+                dependencies, circleArgs));
+
+        List<String> applicationDependencies = new ArrayList<String>();
+        applicationDependencies.add("RGB");
+
+        SearchFactory factory = new SearchFactory(filters,
+                applicationDependencies, scope);
+
+        Set<String> pushAttributes = new HashSet<String>();
+        pushAttributes.add("thumbnail.jpeg");
+        pushAttributes.add("circle-data");
+        pushAttributes.add("_rows.int");
+        pushAttributes.add("_cols.int");
+
+        return factory.createSearch(pushAttributes);
+    }
+
+    private static FilterCode createFilterCode(String path) throws IOException {
+        InputStream in = null;
+        try {
+            in = new BufferedInputStream(new FileInputStream(path));
+            return new FilterCode(in);
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException ignore) {
+                }
+            }
+        }
     }
 
     private void resetSharpness() {
