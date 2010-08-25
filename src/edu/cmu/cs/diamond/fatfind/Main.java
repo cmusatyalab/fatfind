@@ -14,7 +14,13 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
+import java.awt.BasicStroke;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.Line2D;
+import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -32,6 +38,7 @@ import org.gnome.gtk.Entry.Changed;
 import org.gnome.gtk.IconView.SelectionChanged;
 import org.gnome.gtk.Range.ValueChanged;
 import org.gnome.gtk.Widget.*;
+import org.gnome.pango.FontDescription;
 
 import edu.cmu.cs.diamond.opendiamond.*;
 
@@ -69,6 +76,8 @@ public class Main {
     final private DrawingArea selectedResult;
 
     final private Window histogramWindow;
+
+    final private TextView histogram;
 
     final private IconView calibrationImages;
 
@@ -158,6 +167,7 @@ public class Main {
         generateHistogram = (Button) getWidget(glade, "generateHistogram");
         selectedResult = (DrawingArea) getWidget(glade, "selectedResult");
         histogramWindow = (Window) getWidget(glade, "histogramWindow");
+        histogram = (TextView) getWidget(glade, "histogram");
         calibrationImages = (IconView) getWidget(glade, "calibrationImages");
         definedSearches = (TreeView) getWidget(glade, "definedSearches");
         minSharpness = (Range) getWidget(glade, "minSharpness");
@@ -615,11 +625,39 @@ public class Main {
 
         // generateHistogram
         generateHistogram.connect(new Clicked() {
-
             @Override
             public void onClicked(Button source) {
-                // TODO Auto-generated method stub
+                TextBuffer text = histogram.getBuffer();
 
+                histogramWindow.showAll();
+
+                // clear text
+                text.setText("");
+
+                // set font
+                FontDescription fontDesc = new FontDescription("Monospace");
+                histogram.modifyFont(fontDesc);
+
+                // for selected?
+                if (selectedResultImage != null) {
+                    addHistogram(text, "selected image", selectedResultImage
+                            .getCircles());
+                }
+
+                // for rest
+                List<Circle> allCircles = new ArrayList<Circle>();
+
+                // Walk through the list, reading each row
+                TreeIter iter = foundItems.getIterFirst();
+                if (iter != null) {
+                    do {
+                        FatFindResult r = (FatFindResult) foundItems.getValue(
+                                iter, foundItemResult);
+                        allCircles.addAll(r.getCircles());
+                    } while (iter.iterNext());
+                }
+
+                addHistogram(text, "all results", allCircles);
             }
         });
 
@@ -802,6 +840,107 @@ public class Main {
 
         calibrateRefImage.connect(drawReferenceCircle);
         defineRefImage.connect(drawReferenceCircle);
+    }
+
+    private static void addHistogram(TextBuffer text, String title,
+            List<Circle> circles) {
+        List<Double> radii = new ArrayList<Double>();
+
+        double minR = Double.MAX_VALUE;
+        double maxR = 0.0;
+
+        for (Circle c : circles) {
+            if (c.isInResult()) {
+                double r = c.getQuadraticMeanRadius();
+                radii.add(r);
+                minR = Math.min(r, minR);
+                maxR = Math.max(r, maxR);
+            }
+        }
+
+        if (maxR == minR) {
+            maxR += 10.0;
+        }
+
+        // print histogram info
+        int hist[] = new int[30];
+        int total = 0;
+        for (int i = 0; i < radii.size(); i++) {
+            int cell = (int) ((radii.get(i) - minR) / (maxR - minR) * (hist.length - 1));
+            total++;
+            hist[cell]++;
+        }
+
+        TextIter textIter = text.getIter(-1);
+        text.insert(textIter, "Histogram for " + title + "\n\n");
+
+        double width = (maxR - minR) / hist.length;
+        for (int i = 0; i < hist.length; i++) {
+            double low = minR + (width * i);
+            double high = minR + (width * (i + 1));
+
+            text.insert(textIter, String.format(" (%#f -- %#f): %5d\n", low,
+                    high, hist[i]));
+        }
+
+        text.insert(textIter, String.format("\n Total circles: %d\n\n", total));
+
+        // insert graphic
+        text.insert(textIter, drawHistogram(hist, minR, maxR));
+
+        text.insert(textIter, "\n\n\n");
+    }
+
+    // this is a crappy histogram
+    private static Pixbuf drawHistogram(int[] hist, double minR, double maxR) {
+        int w = 320;
+        int h = 240;
+
+        int margin = 5;
+
+        // initialize
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON);
+
+        g.setColor(java.awt.Color.WHITE);
+        g.fillRect(0, 0, w, h);
+
+        int maxCount = -1;
+        for (int val : hist) {
+            maxCount = Math.max(val, maxCount);
+        }
+
+        // draw frame
+        g.setColor(java.awt.Color.BLACK);
+        g.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_BUTT,
+                BasicStroke.JOIN_MITER));
+        Path2D frame = new Path2D.Double();
+        frame.moveTo(margin, margin);
+        frame.lineTo(margin, h - margin);
+        frame.lineTo(w - margin, h - margin);
+        g.draw(frame);
+
+        // draw bars
+        double lineWidth = (w - ((4 + hist.length) * margin)) / hist.length;
+        double xAdvance = lineWidth + margin;
+        double x = xAdvance / 2.0;
+
+        g.setColor(java.awt.Color.RED);
+        g.setStroke(new BasicStroke((float) lineWidth, BasicStroke.CAP_BUTT,
+                BasicStroke.JOIN_MITER));
+
+        for (int val : hist) {
+            double barHeight = ((double) val / (double) maxCount)
+                    * (h - (4 * margin));
+            x += xAdvance;
+            g.draw(new Line2D.Double(x, h - margin, x, h - margin - barHeight));
+        }
+
+        // done
+        g.dispose();
+        return createPixbuf(img);
     }
 
     private void runBackgroundSearch(final Search search) {
@@ -995,5 +1134,33 @@ public class Main {
                 foundItemResult);
         foundItems.setValue(iter, foundItemThumbnail, r.createThumbnail());
         foundItems.setValue(iter, foundItemTitle, r.createThumbnailTitle());
+    }
+
+    static Pixbuf createPixbuf(BufferedImage img) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            // convert to PPM
+            String ppmHeader = "P6\n" + img.getWidth() + " " + img.getHeight()
+                    + "\n255\n";
+
+            out.write(ppmHeader.getBytes("UTF-8"));
+
+            int data[] = ((DataBufferInt) img.getRaster().getDataBuffer())
+                    .getData();
+            for (int d : data) {
+                int r = (d >> 16) & 0xFF;
+                int g = (d >> 8) & 0xFF;
+                int b = d & 0xFF;
+                out.write(r);
+                out.write(g);
+                out.write(b);
+            }
+
+            return new Pixbuf(out.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        throw new IllegalStateException("Should never happen");
     }
 }

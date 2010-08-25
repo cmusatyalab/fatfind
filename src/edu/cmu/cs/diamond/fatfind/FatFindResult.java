@@ -17,9 +17,6 @@ package edu.cmu.cs.diamond.fatfind;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.List;
 
 import org.gnome.gdk.Pixbuf;
@@ -90,34 +87,6 @@ class FatFindResult {
 
         g.dispose();
 
-        return createPixbuf(thumb);
-    }
-
-    private static Pixbuf createPixbuf(BufferedImage img) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            // convert to PPM
-            String ppmHeader = "P6\n" + img.getWidth() + " " + img.getHeight()
-                    + "\n255\n";
-
-            out.write(ppmHeader.getBytes("UTF-8"));
-
-            int data[] = ((DataBufferInt) img.getRaster().getDataBuffer())
-                    .getData();
-            for (int d : data) {
-                int r = (d >> 16) & 0xFF;
-                int g = (d >> 8) & 0xFF;
-                int b = d & 0xFF;
-                out.write(r);
-                out.write(g);
-                out.write(b);
-            }
-
-            return new Pixbuf(out.toByteArray());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        throw new IllegalStateException("Should never happen");
+        return Main.createPixbuf(thumb);
     }
 }
