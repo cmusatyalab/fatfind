@@ -879,7 +879,7 @@ public class Main {
             double low = minR + (width * i);
             double high = minR + (width * (i + 1));
 
-            text.insert(textIter, String.format(" (%#f -- %#f): %5d\n", low,
+            text.insert(textIter, String.format(" (%g -- %g): %5d\n", low,
                     high, hist[i]));
         }
 
