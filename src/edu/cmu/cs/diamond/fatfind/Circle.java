@@ -24,7 +24,6 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.freedesktop.cairo.Context;
@@ -56,7 +55,7 @@ class Circle {
 
     final private double t;
 
-    final private boolean inResult;
+    private boolean inResult;
 
     public Circle(double x, double y, double a, double b, double t,
             boolean inResult) {
@@ -90,6 +89,10 @@ class Circle {
 
     public boolean isInResult() {
         return inResult;
+    }
+
+    public void setInResult(boolean inResult) {
+        this.inResult = inResult;
     }
 
     @Override
@@ -143,7 +146,7 @@ class Circle {
                         Float.parseFloat(items[3]), Float.parseFloat(items[4]),
                         Boolean.parseBoolean(items[5])));
             }
-            return Collections.unmodifiableList(circles);
+            return circles;
         } finally {
             if (p != null) {
                 p.destroy();
@@ -278,6 +281,6 @@ class Circle {
                     bb.getFloat(), bb.getFloat(), bb.getInt() != 0));
         }
 
-        return Collections.unmodifiableList(circles);
+        return circles;
     }
 }

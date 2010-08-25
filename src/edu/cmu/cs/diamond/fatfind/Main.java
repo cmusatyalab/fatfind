@@ -110,6 +110,8 @@ public class Main {
 
     private ProcessedImage simulatedSearchImage;
 
+    private ProcessedImage selectedResultImage;
+
     private Circle referenceCircle;
 
     double currentSharpness = 1.0;
@@ -133,6 +135,10 @@ public class Main {
     private volatile int displayedObjects;
 
     private volatile Search search;
+
+    private SearchFactory factory;
+
+    private AddingCircle addingCircle;
 
     private Main(XML glade, File index) throws IOException {
         fatfind = (Window) getWidget(glade, "fatfind");
@@ -285,8 +291,6 @@ public class Main {
         calibrationImages.connect(new IconView.SelectionChanged() {
             @Override
             public void onSelectionChanged(IconView source) {
-                // TODO Auto-generated method stub
-
                 // reset reference image
                 setReferenceCircle(null);
 
@@ -357,7 +361,7 @@ public class Main {
 
                 if (event.getType() == EventType.BUTTON_PRESS
                         && event.getButton() == MouseButton.LEFT) {
-                    Circle c = calibrationImage.getCircleForPoint((int) event
+                    Circle c = calibrationImage.getCircleAtPoint((int) event
                             .getX(), (int) event.getY());
                     if (c != null) {
                         setReferenceCircle(c);
@@ -560,11 +564,31 @@ public class Main {
 
         // searchResults
         searchResults.connect(new SelectionChanged() {
-
             @Override
             public void onSelectionChanged(IconView source) {
-                // TODO Auto-generated method stub
+                // TODO
+                try {
+                    for (TreePath path : source.getSelectedItems()) {
+                        TreeIter item = foundItems.getIter(path);
+                        FatFindResult r = (FatFindResult) foundItems.getValue(
+                                item, foundItemResult);
 
+                        // busy cursor
+                        // XXX
+                        // fatfind.getWindow().setCursor(Cursor.BUSY);
+
+                        // get the item
+                        Set<String> atts = new HashSet<String>();
+                        atts.add("");
+                        Result newR = factory.generateResult(r.getId(), atts);
+
+                        selectedResultImage = new ProcessedImage(
+                                selectedResult, new Pixbuf(newR.getData()), r
+                                        .getCircles());
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -601,10 +625,20 @@ public class Main {
 
         // selectedResult
         selectedResult.connect(new ExposeEvent() {
-
             @Override
             public boolean onExposeEvent(Widget source, EventExpose event) {
-                // TODO
+                if (selectedResultImage == null) {
+                    return false;
+                }
+
+                selectedResultImage.drawToWidget(Circle.FILTER_BY_IN_RESULT);
+
+                // drawing circle?
+                if (addingCircle != null) {
+                    Context cr = new Context(source.getWindow());
+                    addingCircle.draw(cr);
+                }
+
                 return false;
             }
         });
@@ -612,43 +646,90 @@ public class Main {
         selectedResult.connect(new ButtonPressEvent() {
             @Override
             public boolean onButtonPressEvent(Widget source, EventButton event) {
-                // TODO Auto-generated method stub
+                if (selectedResultImage == null) {
+                    return false;
+                }
+
+                selectedResultImage.setShowCircles(true);
+
+                if ((event.getType() == EventType.BUTTON_PRESS)
+                        && event.getButton() == MouseButton.LEFT) {
+                    if (event.getState().contains(ModifierType.SHIFT_MASK)) {
+                        // delete (also from circles reference in the result in
+                        // the model)
+                        boolean deleted = selectedResultImage
+                                .deleteCircleAtPoint((int) event.getX(),
+                                        (int) event.getY());
+                        if (deleted) {
+                            updateFoundItems();
+                        }
+                    } else {
+                        // start add
+                        addingCircle = new AddingCircle((int) event.getX(),
+                                (int) event.getY());
+                    }
+                }
                 return false;
             }
         });
 
         selectedResult.connect(new ButtonReleaseEvent() {
-
             @Override
             public boolean onButtonReleaseEvent(Widget source, EventButton event) {
-                // TODO Auto-generated method stub
+                if (addingCircle != null) {
+                    Circle newCircle = addingCircle
+                            .createCircle(selectedResultImage.getScale());
+                    double r = addingCircle.getR();
+                    addingCircle = null;
+
+                    if (r < 1.0) {
+                        // too small, this toggles the exclusion filter
+                        selectedResultImage.toggleCircleAtPoint((int) event
+                                .getX(), (int) event.getY());
+                    } else {
+                        // add new circle
+                        selectedResultImage.addCircle(newCircle);
+                    }
+
+                    updateFoundItems();
+                }
+
                 return false;
             }
         });
 
         selectedResult.connect(new MotionNotifyEvent() {
-
             @Override
             public boolean onMotionNotifyEvent(Widget source, EventMotion event) {
-                // TODO Auto-generated method stub
+                if (selectedResultImage != null) {
+                    selectedResultImage.setShowCircles(true);
+
+                    if (addingCircle != null) {
+                        addingCircle.setCurrent((int) event.getX(), (int) event
+                                .getY());
+                    }
+                    selectedResult.queueDraw();
+                }
                 return false;
             }
         });
 
         selectedResult.connect(new EnterNotifyEvent() {
-
             @Override
             public boolean onEnterNotifyEvent(Widget source, EventCrossing event) {
-                // TODO Auto-generated method stub
+                if (selectedResultImage != null) {
+                    selectedResultImage.setShowCircles(true);
+                }
                 return false;
             }
         });
 
         selectedResult.connect(new LeaveNotifyEvent() {
-
             @Override
             public boolean onLeaveNotifyEvent(Widget source, EventCrossing event) {
-                // TODO Auto-generated method stub
+                if (selectedResultImage != null) {
+                    selectedResultImage.setShowCircles(false);
+                }
                 return false;
             }
         });
@@ -842,8 +923,7 @@ public class Main {
         List<String> applicationDependencies = new ArrayList<String>();
         applicationDependencies.add("RGB");
 
-        SearchFactory factory = new SearchFactory(filters,
-                applicationDependencies, scope);
+        factory = new SearchFactory(filters, applicationDependencies, scope);
 
         Set<String> pushAttributes = new HashSet<String>();
         pushAttributes.add("thumbnail.jpeg");
@@ -905,5 +985,15 @@ public class Main {
 
         calibrateRefImage.queueDraw();
         defineRefImage.queueDraw();
+    }
+
+    private void updateFoundItems() {
+        TreePath path = searchResults.getSelectedItems()[0];
+        TreeIter iter = foundItems.getIter(path);
+
+        FatFindResult r = (FatFindResult) foundItems.getValue(iter,
+                foundItemResult);
+        foundItems.setValue(iter, foundItemThumbnail, r.createThumbnail());
+        foundItems.setValue(iter, foundItemTitle, r.createThumbnailTitle());
     }
 }

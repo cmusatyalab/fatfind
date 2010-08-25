@@ -44,13 +44,31 @@ class ProcessedImage {
         return scale;
     }
 
-    public Circle getCircleForPoint(int x, int y) {
-        int index = hitmap[y * allocW + x];
+    public boolean deleteCircleAtPoint(int x, int y) {
+        int index = getCircleIndexAtPoint(x, y);
+
+        if (index == -1) {
+            return false;
+        } else {
+            circles.remove(index);
+            updateHitmap();
+            widget.queueDraw();
+            return true;
+        }
+    }
+
+    public Circle getCircleAtPoint(int x, int y) {
+        int index = getCircleIndexAtPoint(x, y);
         if (index == -1) {
             return null;
         } else {
             return circles.get(index);
         }
+    }
+
+    private int getCircleIndexAtPoint(int x, int y) {
+        int index = hitmap[y * allocW + x];
+        return index;
     }
 
     final private Pixbuf original;
@@ -187,5 +205,17 @@ class ProcessedImage {
         if (showCircles) {
             drawCircles(cr, filter);
         }
+    }
+
+    public void toggleCircleAtPoint(int x, int y) {
+        Circle c = circles.get(getCircleIndexAtPoint(x, y));
+        c.setInResult(!c.isInResult());
+        widget.queueDraw();
+    }
+
+    public void addCircle(Circle c) {
+        circles.add(c);
+        updateHitmap();
+        widget.queueDraw();
     }
 }
