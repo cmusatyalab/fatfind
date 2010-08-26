@@ -24,6 +24,7 @@ import java.util.List;
 import org.freedesktop.cairo.Context;
 import org.gnome.gdk.InterpType;
 import org.gnome.gdk.Pixbuf;
+import org.gnome.gdk.Window;
 import org.gnome.gtk.Allocation;
 import org.gnome.gtk.Widget;
 import org.gnome.pango.FontDescription;
@@ -77,6 +78,8 @@ class ProcessedImage {
 
     final private Widget widget;
 
+    final private Window window;
+
     private Pixbuf scaled;
 
     private List<Circle> circles;
@@ -99,6 +102,8 @@ class ProcessedImage {
         this.widget = widget;
         this.original = original;
         this.circles = circles;
+
+        window = widget.getWindow(); // work around refcount bug?
 
         rescale();
     }
