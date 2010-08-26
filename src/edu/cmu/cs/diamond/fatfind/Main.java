@@ -115,11 +115,11 @@ public class Main {
             new DataColumn[] { calibrationImagesThumbnail,
                     calibrationImagesFilename });
 
-    private volatile ProcessedImage calibrationImage;
+    private ProcessedImage calibrationImage;
 
-    private volatile ProcessedImage simulatedSearchImage;
+    private ProcessedImage simulatedSearchImage;
 
-    private volatile ProcessedImage selectedResultImage;
+    private ProcessedImage selectedResultImage;
 
     private Circle referenceCircle;
 
@@ -337,19 +337,22 @@ public class Main {
                                     e.printStackTrace();
                                 }
 
-                                calibrationImage = new ProcessedImage(
-                                        selectedImage, calibrationPix, circles);
+                                synchronized (Gdk.lock) {
+                                    calibrationImage = new ProcessedImage(
+                                            selectedImage, calibrationPix,
+                                            circles);
 
-                                // draw simulated search
-                                simulatedSearchImage = new ProcessedImage(
-                                        simulatedSearch, calibrationPix,
-                                        circles);
-                                simulatedSearchImage.setShowCircles(true);
+                                    // draw simulated search
+                                    simulatedSearchImage = new ProcessedImage(
+                                            simulatedSearch, calibrationPix,
+                                            circles);
+                                    simulatedSearchImage.setShowCircles(true);
 
-                                selectedImage.queueDraw();
-                                simulatedSearch.queueDraw();
+                                    selectedImage.queueDraw();
+                                    simulatedSearch.queueDraw();
 
-                                calibrationImages.setSensitive(true);
+                                    calibrationImages.setSensitive(true);
+                                }
                             }
                         });
                     } catch (IOException e) {
@@ -596,40 +599,48 @@ public class Main {
         searchResults.connect(new SelectionChanged() {
             @Override
             public void onSelectionChanged(IconView source) {
-                searchResults.setSensitive(false);
-                generateHistogram.setSensitive(false);
-                selectedResultImage = ProcessedImage
-                        .createBusyImage(selectedResult);
-                selectedResult.queueDraw();
 
-                TreePath path = source.getSelectedItems()[0];
-                TreeIter item = foundItems.getIter(path);
+                if (source.getSelectedItems().length == 0) {
+                    selectedResultImage = null;
+                    selectedResult.queueDraw();
+                } else {
+                    searchResults.setSensitive(false);
+                    generateHistogram.setSensitive(false);
+                    selectedResultImage = ProcessedImage
+                            .createBusyImage(selectedResult);
+                    selectedResult.queueDraw();
 
-                final FatFindResult r = (FatFindResult) foundItems.getValue(
-                        item, foundItemResult);
+                    TreePath path = source.getSelectedItems()[0];
+                    TreeIter item = foundItems.getIter(path);
 
-                // get the item in the background
-                final Set<String> atts = new HashSet<String>();
-                atts.add("");
+                    final FatFindResult r = (FatFindResult) foundItems
+                            .getValue(item, foundItemResult);
 
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Result newR = factory.generateResult(r.getId(),
-                                    atts);
+                    // get the item in the background
+                    final Set<String> atts = new HashSet<String>();
+                    atts.add("");
 
-                            selectedResultImage = new ProcessedImage(
-                                    selectedResult, new Pixbuf(newR.getData()),
-                                    r.getCircles());
-                            selectedResult.queueDraw();
-                            searchResults.setSensitive(true);
-                            generateHistogram.setSensitive(true);
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Result newR = factory.generateResult(r.getId(),
+                                        atts);
+
+                                synchronized (Gdk.lock) {
+                                    selectedResultImage = new ProcessedImage(
+                                            selectedResult, new Pixbuf(newR
+                                                    .getData()), r.getCircles());
+                                    selectedResult.queueDraw();
+                                    searchResults.setSensitive(true);
+                                    generateHistogram.setSensitive(true);
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         });
 
@@ -1030,16 +1041,20 @@ public class Main {
                             originalThumb, w);
 
                     // add to Gtk
-                    TreeIter iter = foundItems.appendRow();
+                    synchronized (Gdk.lock) {
+                        TreeIter iter = foundItems.appendRow();
 
-                    foundItems.setValue(iter, foundItemThumbnail, ffr
-                            .createThumbnail());
-                    foundItems.setValue(iter, foundItemTitle, ffr
-                            .createThumbnailTitle());
-                    foundItems.setValue(iter, foundItemResult, ffr);
+                        foundItems.setValue(iter, foundItemThumbnail, ffr
+                                .createThumbnail());
+                        foundItems.setValue(iter, foundItemTitle, ffr
+                                .createThumbnailTitle());
+                        foundItems.setValue(iter, foundItemResult, ffr);
+                    }
 
                     displayedObjects++;
                 }
+
+                // search done, shut down
 
                 if (statsExecutor != null) {
                     statsExecutor.shutdownNow();
@@ -1050,9 +1065,11 @@ public class Main {
 
                 search.close();
 
-                stopSearch.setSensitive(false);
-                startSearch.setSensitive(true);
-                clearSearch.setSensitive(true);
+                synchronized (Gdk.lock) {
+                    stopSearch.setSensitive(false);
+                    startSearch.setSensitive(true);
+                    clearSearch.setSensitive(true);
+                }
 
                 return null;
             }
@@ -1163,13 +1180,14 @@ public class Main {
     }
 
     private void updateFoundItems() {
-        TreePath path = searchResults.getSelectedItems()[0];
-        TreeIter iter = foundItems.getIter(path);
+        for (TreePath path : searchResults.getSelectedItems()) {
+            TreeIter iter = foundItems.getIter(path);
 
-        FatFindResult r = (FatFindResult) foundItems.getValue(iter,
-                foundItemResult);
-        foundItems.setValue(iter, foundItemThumbnail, r.createThumbnail());
-        foundItems.setValue(iter, foundItemTitle, r.createThumbnailTitle());
+            FatFindResult r = (FatFindResult) foundItems.getValue(iter,
+                    foundItemResult);
+            foundItems.setValue(iter, foundItemThumbnail, r.createThumbnail());
+            foundItems.setValue(iter, foundItemTitle, r.createThumbnailTitle());
+        }
     }
 
     static Pixbuf createPixbuf(BufferedImage img) {
