@@ -119,7 +119,7 @@ public class Main {
 
     private volatile ProcessedImage simulatedSearchImage;
 
-    private ProcessedImage selectedResultImage;
+    private volatile ProcessedImage selectedResultImage;
 
     private Circle referenceCircle;
 
@@ -596,29 +596,40 @@ public class Main {
         searchResults.connect(new SelectionChanged() {
             @Override
             public void onSelectionChanged(IconView source) {
-                // TODO
-                try {
-                    for (TreePath path : source.getSelectedItems()) {
-                        TreeIter item = foundItems.getIter(path);
-                        FatFindResult r = (FatFindResult) foundItems.getValue(
-                                item, foundItemResult);
+                searchResults.setSensitive(false);
+                generateHistogram.setSensitive(false);
+                selectedResultImage = ProcessedImage
+                        .createBusyImage(selectedResult);
+                selectedResult.queueDraw();
 
-                        // busy cursor
-                        // XXX
-                        // fatfind.getWindow().setCursor(Cursor.BUSY);
+                TreePath path = source.getSelectedItems()[0];
+                TreeIter item = foundItems.getIter(path);
 
-                        // get the item
-                        Set<String> atts = new HashSet<String>();
-                        atts.add("");
-                        Result newR = factory.generateResult(r.getId(), atts);
+                final FatFindResult r = (FatFindResult) foundItems.getValue(
+                        item, foundItemResult);
 
-                        selectedResultImage = new ProcessedImage(
-                                selectedResult, new Pixbuf(newR.getData()), r
-                                        .getCircles());
+                // get the item in the background
+                final Set<String> atts = new HashSet<String>();
+                atts.add("");
+
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Result newR = factory.generateResult(r.getId(),
+                                    atts);
+
+                            selectedResultImage = new ProcessedImage(
+                                    selectedResult, new Pixbuf(newR.getData()),
+                                    r.getCircles());
+                            selectedResult.queueDraw();
+                            searchResults.setSensitive(true);
+                            generateHistogram.setSensitive(true);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                });
             }
         });
 
