@@ -14,8 +14,7 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
-import org.freedesktop.cairo.Context;
-import org.gnome.gdk.Color;
+import gobject.introspection.cairo.Context;
 
 class AddingCircle {
 
@@ -40,10 +39,12 @@ class AddingCircle {
     }
 
     public void draw(Context cr) {
-        cr.setSource(Color.RED);
-        cr.arc(startX, startY, getR(), 0.0, 2.0 * Math.PI);
-        cr.setLineWidth(1.0);
-        cr.stroke();
+        Cairo c = Cairo.INSTANCE;
+
+        c.setSourceRgb(cr, 1.0, 0.0, 0.0);
+        c.arc(cr, startX, startY, getR(), 0.0, 2.0 * Math.PI);
+        c.setLineWidth(cr, 1.0);
+        c.stroke(cr);
     }
 
     public double getR() {

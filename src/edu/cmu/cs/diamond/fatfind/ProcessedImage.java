@@ -14,20 +14,21 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
+import gobject.introspection.Gdk.GdkGlobals;
+import gobject.introspection.GdkPixbuf.InterpType;
+import gobject.introspection.GdkPixbuf.Pixbuf;
+import gobject.introspection.Gtk.Widget;
+import gobject.introspection.Pango.FontDescription;
+import gobject.introspection.Pango.Layout;
+import gobject.introspection.PangoCairo.PangoCairoGlobals;
+import gobject.introspection.cairo.Context;
+
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.List;
-
-import org.freedesktop.cairo.Context;
-import org.gnome.gdk.InterpType;
-import org.gnome.gdk.Pixbuf;
-import org.gnome.gtk.Allocation;
-import org.gnome.gtk.Widget;
-import org.gnome.pango.FontDescription;
-import org.gnome.pango.Layout;
 
 class ProcessedImage {
     public Pixbuf getOriginal() {
@@ -104,14 +105,17 @@ class ProcessedImage {
     }
 
     public void rescale() {
-        Allocation a = widget.getAllocation();
+        // XXX tmp
+        rescale(0, 0);
+    }
 
-        if ((allocW == a.getWidth()) && (allocH == a.getHeight())) {
+    public void rescale(int aw, int ah) {
+        if ((allocW == aw) && (allocH == ah)) {
             return;
         }
 
-        allocW = a.getWidth();
-        allocH = a.getHeight();
+        allocW = aw;
+        allocH = ah;
 
         if (original == null) {
             return;
@@ -136,7 +140,7 @@ class ProcessedImage {
             scale = (double) allocW / (double) original.getWidth();
         }
 
-        scaled = original.scale(w, h, InterpType.BILINEAR);
+        scaled = original.scaleSimple(w, h, InterpType.BILINEAR);
 
         // generate hitmap
         updateHitmap();
@@ -207,11 +211,11 @@ class ProcessedImage {
     public void drawToWidget(Circle.Filter filter) {
         rescale();
 
-        Context cr = new Context(widget.getWindow());
+        Context cr = GdkGlobals.cairoCreate(widget.getWindow());
 
         if (original == null) {
             // "busy" image
-            Layout layout = new Layout(cr);
+            Layout layout = PangoCairoGlobals.createLayout(cr);
             layout.setFontDescription(new FontDescription("Sans"));
             layout.setText("Processing...");
             int w = layout.getPixelWidth();

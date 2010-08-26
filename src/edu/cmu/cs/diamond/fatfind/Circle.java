@@ -26,8 +26,8 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.freedesktop.cairo.Context;
-import org.gnome.gdk.Pixbuf;
+import gobject.introspection.GdkPixbuf.Pixbuf;
+import gobject.introspection.cairo.Context;
 
 class Circle {
     public interface Filter {
@@ -103,14 +103,15 @@ class Circle {
 
     public static List<Circle> createFromPixbuf(Pixbuf buf, double minSharpness)
             throws IOException {
-        if (buf.getNumChannels() != 3) {
+        if (buf.getNChannels() != 3) {
             throw new IllegalArgumentException(
                     "buf must have exactly 3 channels");
         }
 
         int w = buf.getWidth();
         int h = buf.getHeight();
-        byte data[] = buf.getPixels();
+        byte data[] = buf.getPixels().getByteArray(0,
+                buf.getNChannels() * buf.getHeight() * buf.getRowstride());
 
         ProcessBuilder pb = new ProcessBuilder("/tmp/zzff/bin/fatfind-runner",
                 Double.toString(minSharpness));
@@ -202,42 +203,44 @@ class Circle {
     }
 
     void draw(Context cr, double scale, Fill fill) {
+        Cairo c = Cairo.INSTANCE;
+
         // draw
-        cr.save();
-        cr.scale(scale, scale);
+        c.save(cr);
+        c.scale(cr, scale, scale);
 
-        cr.translate(getX(), getY());
-        cr.rotate(getT());
-        cr.scale(getA(), getB());
+        c.translate(cr, getX(), getY());
+        c.rotate(cr, getT());
+        c.scale(cr, getA(), getB());
 
-        cr.moveTo(1.0, 0.0);
-        cr.arc(0.0, 0.0, 1.0, 0.0, 2 * Math.PI);
+        c.moveTo(cr, 1.0, 0.0);
+        c.arc(cr, 0.0, 0.0, 1.0, 0.0, 2 * Math.PI);
 
-        cr.restore();
+        c.restore(cr);
 
         switch (fill) {
         case SOLID:
             // show fill, no dash
-            cr.setLineWidth(2.0);
-            cr.setDash(new double[0]);
-            cr.setSource(1.0, 0.0, 0.0);
-            cr.strokePreserve();
-            cr.setSource(1.0, 0.0, 0.0, 0.2);
-            cr.fill();
+            c.setLineWidth(cr, 2.0);
+            c.setDash(cr, new double[0], 0, 0);
+            c.setSourceRgb(cr, 1.0, 0.0, 0.0);
+            c.strokePreserve(cr);
+            c.setSourceRgba(cr, 1.0, 0.0, 0.0, 0.2);
+            c.fill(cr);
             break;
 
         case DASHED:
-            cr.setLineWidth(1.0);
-            cr.setDash(new double[] { 5.0 });
-            cr.setSource(1.0, 0.0, 0.0);
-            cr.stroke();
+            c.setLineWidth(cr, 1.0);
+            c.setDash(cr, new double[] { 5.0 }, 1, 0);
+            c.setSourceRgb(cr, 1.0, 0.0, 0.0);
+            c.stroke(cr);
             break;
 
         case HAIRLINE:
-            cr.setLineWidth(1.0);
-            cr.setDash(new double[0]);
-            cr.setSource(1.0, 0.0, 0.0);
-            cr.stroke();
+            c.setLineWidth(cr, 1.0);
+            c.setDash(cr, new double[0], 0, 0);
+            c.setSourceRgb(cr, 1.0, 0.0, 0.0);
+            c.stroke(cr);
             break;
         }
     }

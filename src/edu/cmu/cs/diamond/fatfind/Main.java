@@ -14,6 +14,14 @@
 
 package edu.cmu.cs.diamond.fatfind;
 
+import edu.cmu.cs.diamond.opendiamond.*;
+import gobject.introspection.GdkPixbuf.Pixbuf;
+import gobject.introspection.Gtk.*;
+import gobject.introspection.Gtk.Widget.EnterNotifyEvent;
+import gobject.introspection.Gtk.Widget.ExposeEvent;
+import gobject.introspection.Gtk.Widget.LeaveNotifyEvent;
+import gobject.introspection.Gtk.Widget.MotionNotifyEvent;
+
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -23,24 +31,12 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 
 import javax.imageio.ImageIO;
 
-import org.freedesktop.cairo.Context;
-import org.gnome.gdk.*;
-import org.gnome.glade.Glade;
-import org.gnome.glade.XML;
-import org.gnome.gtk.*;
-import org.gnome.gtk.Window;
-import org.gnome.gtk.Button.Clicked;
-import org.gnome.gtk.Entry.Changed;
-import org.gnome.gtk.IconView.SelectionChanged;
-import org.gnome.gtk.Range.ValueChanged;
-import org.gnome.gtk.Widget.*;
-import org.gnome.pango.FontDescription;
-
-import edu.cmu.cs.diamond.opendiamond.*;
+import org.GNOME.Accessibility.ModifierType;
 
 public class Main {
     final private Window fatfind;

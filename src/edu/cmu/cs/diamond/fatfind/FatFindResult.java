@@ -19,9 +19,8 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
-import org.gnome.gdk.Pixbuf;
-
 import edu.cmu.cs.diamond.opendiamond.ObjectIdentifier;
+import gobject.introspection.GdkPixbuf.Pixbuf;
 
 class FatFindResult {
     final private List<Circle> circles;
