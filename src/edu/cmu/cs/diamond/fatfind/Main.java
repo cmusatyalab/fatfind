@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 import org.freedesktop.cairo.Context;
 import org.gnome.gdk.*;
@@ -330,12 +331,7 @@ public class Main {
                             @Override
                             public void run() {
                                 List<Circle> circles = null;
-                                try {
-                                    circles = Circle.createFromPixbuf(
-                                            calibrationPix, 1.0);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+                                circles = computeCircles(calibrationPix, 1.0);
 
                                 synchronized (Gdk.lock) {
                                     calibrationImage = new ProcessedImage(
@@ -468,14 +464,10 @@ public class Main {
             @Override
             public void onClicked(Button source) {
                 currentSharpness = minSharpness.getValue();
-                try {
-                    List<Circle> circles = Circle.createFromPixbuf(
-                            calibrationImage.getOriginal(), currentSharpness);
-                    calibrationImage.setCircles(circles);
-                    simulatedSearchImage.setCircles(circles);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                List<Circle> circles = computeCircles(calibrationImage
+                        .getOriginal(), currentSharpness);
+                calibrationImage.setCircles(circles);
+                simulatedSearchImage.setCircles(circles);
             }
         });
 
@@ -882,6 +874,18 @@ public class Main {
 
         calibrateRefImage.connect(drawReferenceCircle);
         defineRefImage.connect(drawReferenceCircle);
+    }
+
+    private List<Circle> computeCircles(Pixbuf pix, double minSharpness) {
+        try {
+            return Circle.createFromPixbuf(pix, minSharpness);
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, e, "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+            return null;
+        }
     }
 
     private static void addHistogram(TextBuffer text, String title,
