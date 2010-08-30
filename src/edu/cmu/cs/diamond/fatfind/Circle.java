@@ -112,8 +112,8 @@ class Circle {
         int h = buf.getHeight();
         byte data[] = buf.getPixels();
 
-        ProcessBuilder pb = new ProcessBuilder("/tmp/zzff/bin/fatfind-runner",
-                Double.toString(minSharpness));
+        ProcessBuilder pb = new ProcessBuilder("fatfind-runner", Double
+                .toString(minSharpness));
         Process p = null;
         BufferedReader in = null;
         OutputStream out = null;
