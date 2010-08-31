@@ -327,7 +327,7 @@ public class Main {
                         calibrationImages.setSensitive(false);
 
                         // compute the circles in the background
-                        executor.submit(new Runnable() {
+                        executor.execute(new Runnable() {
                             @Override
                             public void run() {
                                 List<Circle> circles = null;
@@ -1023,59 +1023,62 @@ public class Main {
             }
         }, 0, 500, TimeUnit.MILLISECONDS);
 
-        executor.submit(new Callable<java.lang.Object>() {
+        executor.execute(new Runnable() {
             @Override
-            public java.lang.Object call() throws Exception {
+            public void run() {
                 Result r;
-                while (((r = search.getNextResult()) != null)
-                        && (displayedObjects <= 100)) {
-                    // generate internal result object
-                    List<Circle> circles = Circle.createFromDiamondResult(r
-                            .getValue("circle-data"));
+                try {
+                    while (((r = search.getNextResult()) != null)
+                            && (displayedObjects <= 100)) {
+                        // generate internal result object
+                        List<Circle> circles = Circle.createFromDiamondResult(r
+                                .getValue("circle-data"));
 
-                    ObjectIdentifier id = r.getObjectIdentifier();
+                        ObjectIdentifier id = r.getObjectIdentifier();
 
-                    BufferedImage originalThumb = ImageIO
-                            .read(new ByteArrayInputStream(r
-                                    .getValue("thumbnail.jpeg")));
+                        BufferedImage originalThumb = ImageIO
+                                .read(new ByteArrayInputStream(r
+                                        .getValue("thumbnail.jpeg")));
 
-                    int w = Util.extractInt(r.getValue("_cols.int"));
+                        int w = Util.extractInt(r.getValue("_cols.int"));
 
-                    FatFindResult ffr = new FatFindResult(circles, id,
-                            originalThumb, w);
+                        FatFindResult ffr = new FatFindResult(circles, id,
+                                originalThumb, w);
 
-                    // add to Gtk
-                    synchronized (Gdk.lock) {
-                        TreeIter iter = foundItems.appendRow();
+                        // add to Gtk
+                        synchronized (Gdk.lock) {
+                            TreeIter iter = foundItems.appendRow();
 
-                        foundItems.setValue(iter, foundItemThumbnail, ffr
-                                .createThumbnail());
-                        foundItems.setValue(iter, foundItemTitle, ffr
-                                .createThumbnailTitle());
-                        foundItems.setValue(iter, foundItemResult, ffr);
+                            foundItems.setValue(iter, foundItemThumbnail, ffr
+                                    .createThumbnail());
+                            foundItems.setValue(iter, foundItemTitle, ffr
+                                    .createThumbnailTitle());
+                            foundItems.setValue(iter, foundItemResult, ffr);
+                        }
+
+                        displayedObjects++;
                     }
 
-                    displayedObjects++;
+                    // search done, shut down
+
+                    if (statsExecutor != null) {
+                        statsExecutor.shutdownNow();
+                    }
+                    if (statsFuture != null) {
+                        statsFuture.cancel(true);
+                    }
+
+                    search.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
-
-                // search done, shut down
-
-                if (statsExecutor != null) {
-                    statsExecutor.shutdownNow();
-                }
-                if (statsFuture != null) {
-                    statsFuture.cancel(true);
-                }
-
-                search.close();
-
                 synchronized (Gdk.lock) {
                     stopSearch.setSensitive(false);
                     startSearch.setSensitive(true);
                     clearSearch.setSensitive(true);
                 }
-
-                return null;
             }
         });
     }
