@@ -103,7 +103,11 @@ class ProcessedImage {
         this.original = original;
         this.circles = circles;
 
-        window = widget.getWindow(); // work around refcount bug?
+        // https://bugzilla.gnome.org/show_bug.cgi?id=628348
+        window = widget.getWindow();
+        if (window == null) {
+            throw new IllegalArgumentException("widget must be realized");
+        }
 
         rescale();
     }
