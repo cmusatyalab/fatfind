@@ -78,7 +78,8 @@ class ProcessedImage {
 
     final private Widget widget;
 
-    final private Window window;
+    // delete when https://bugzilla.gnome.org/show_bug.cgi?id=628348 fixed
+    private Window window;
 
     private Pixbuf scaled;
 
@@ -102,12 +103,6 @@ class ProcessedImage {
         this.widget = widget;
         this.original = original;
         this.circles = circles;
-
-        // https://bugzilla.gnome.org/show_bug.cgi?id=628348
-        window = widget.getWindow();
-        if (window == null) {
-            throw new IllegalArgumentException("widget must be realized");
-        }
 
         rescale();
     }
@@ -215,6 +210,11 @@ class ProcessedImage {
 
     public void drawToWidget(Circle.Filter filter) {
         rescale();
+
+        // https://bugzilla.gnome.org/show_bug.cgi?id=628348
+        if (window == null) {
+            window = widget.getWindow();
+        }
 
         Context cr = new Context(widget.getWindow());
 
