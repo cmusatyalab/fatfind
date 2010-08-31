@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="build" name="FatFind">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="FatFind.classpath">
+        <pathelement location="/usr/share/java/opendiamond.jar"/>
+        <pathelement location="/usr/lib/java-gnome/gtk.jar"/>
+        <pathelement location="/usr/lib64/java-gnome/gtk.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src" excludes="**/*.launch, **/*.java"/>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    	<delete file="fatfind.jar"/>
+    </target>
+	<target name="build" depends="init">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" encoding="UTF-8">
+            <src path="src"/>
+            <classpath refid="FatFind.classpath"/>
+        </javac>
+    </target>
+    <target depends="build" name="jar">
+        <jar destfile="fatfind.jar" basedir="bin"/>
+    </target>
+</project>
