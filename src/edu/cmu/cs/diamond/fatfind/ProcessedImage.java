@@ -70,6 +70,9 @@ class ProcessedImage {
     }
 
     private int getCircleIndexAtPoint(int x, int y) {
+        if (hitmap == null) {
+            return -1;
+        }
         int index = hitmap[y * allocW + x];
         return index;
     }
