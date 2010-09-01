@@ -82,7 +82,7 @@ class ProcessedImage {
     final private Widget widget;
 
     // delete when https://bugzilla.gnome.org/show_bug.cgi?id=628348 fixed
-    private Window window;
+    Window window;
 
     private Pixbuf scaled;
 
@@ -111,6 +111,11 @@ class ProcessedImage {
     }
 
     public void rescale() {
+        // https://bugzilla.gnome.org/show_bug.cgi?id=628348
+        if (window == null) {
+            window = widget.getWindow();
+        }
+
         Allocation a = widget.getAllocation();
 
         if ((allocW == a.getWidth()) && (allocH == a.getHeight())) {
@@ -213,11 +218,6 @@ class ProcessedImage {
 
     public void drawToWidget(Circle.Filter filter) {
         rescale();
-
-        // https://bugzilla.gnome.org/show_bug.cgi?id=628348
-        if (window == null) {
-            window = widget.getWindow();
-        }
 
         Context cr = new Context(widget.getWindow());
 
