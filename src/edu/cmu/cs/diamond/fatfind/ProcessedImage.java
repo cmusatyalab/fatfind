@@ -242,7 +242,12 @@ class ProcessedImage {
     }
 
     public void toggleCircleAtPoint(int x, int y) {
-        Circle c = circles.get(getCircleIndexAtPoint(x, y));
+        int index = getCircleIndexAtPoint(x, y);
+        if (index == -1) {
+            return;
+        }
+
+        Circle c = circles.get(index);
         c.setInResult(!c.isInResult());
         widget.queueDraw();
     }
