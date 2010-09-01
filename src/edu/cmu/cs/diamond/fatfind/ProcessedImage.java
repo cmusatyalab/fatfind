@@ -24,7 +24,6 @@ import java.util.List;
 import org.freedesktop.cairo.Context;
 import org.gnome.gdk.InterpType;
 import org.gnome.gdk.Pixbuf;
-import org.gnome.gdk.Window;
 import org.gnome.gtk.Allocation;
 import org.gnome.gtk.Widget;
 import org.gnome.pango.FontDescription;
@@ -81,9 +80,6 @@ class ProcessedImage {
 
     final private Widget widget;
 
-    // delete when https://bugzilla.gnome.org/show_bug.cgi?id=628348 fixed
-    Window window;
-
     private Pixbuf scaled;
 
     private List<Circle> circles;
@@ -111,11 +107,6 @@ class ProcessedImage {
     }
 
     public void rescale() {
-        // https://bugzilla.gnome.org/show_bug.cgi?id=628348
-        if (window == null) {
-            window = widget.getWindow();
-        }
-
         Allocation a = widget.getAllocation();
 
         if ((allocW == a.getWidth()) && (allocH == a.getHeight())) {
