@@ -1105,21 +1105,18 @@ public class Main {
 
         List<Filter> filters = new ArrayList<Filter>();
         filters.add(new Filter("RGB",
-                createFilterCode("/opt/snapfind/lib/fil_rgb.so"),
-                "f_eval_img2rgb", "f_init_img2rgb", "f_fini_img2rgb", 1,
-                emptyList, emptyList));
+                createFilterCode("/opt/snapfind/lib/fil_rgb"),
+                1, emptyList, emptyList));
 
         // create reexecute factory (faster to execute)
         factory = new SearchFactory(filters, applicationDependencies, scope);
 
         filters.add(new Filter("thumbnailer",
-                createFilterCode("/opt/snapfind/lib/fil_thumb.so"),
-                "f_eval_thumbnailer", "f_init_thumbnailer",
-                "f_fini_thumbnailer", 1, dependencies, thumbArgs));
+                createFilterCode("/opt/snapfind/lib/fil_thumb"),
+                1, dependencies, thumbArgs));
         filters.add(new Filter("circles",
-                createFilterCode("/usr/share/fatfind/filter/fil_circle.so"),
-                "f_eval_circles", "f_init_circles", "f_fini_circles", 1,
-                dependencies, circleArgs));
+                createFilterCode("/usr/share/fatfind/filter/fil_circle"),
+                1, dependencies, circleArgs));
 
         SearchFactory fullFactory = new SearchFactory(filters,
                 applicationDependencies, scope);
