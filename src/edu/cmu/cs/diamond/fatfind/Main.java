@@ -1193,9 +1193,12 @@ public class Main {
     static Pixbuf createPixbuf(BufferedImage img) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            // convert to PPM
-            String ppmHeader = "P6\n" + img.getWidth() + " " + img.getHeight()
-                    + "\n255\n";
+            // Convert to PPM.  The extraneous comment line is required when
+            // gdk-pixbuf is compiled to use GIO for image format detection
+            // because the shared-mime-info database incorrectly requires a
+            // comment on line 2 (fd.o #39126).
+            String ppmHeader = "P6\n# Extraneous comment\n" + img.getWidth() +
+                    " " + img.getHeight() + "\n255\n";
 
             out.write(ppmHeader.getBytes("UTF-8"));
 
