@@ -1102,17 +1102,17 @@ public class Main {
 
         List<Filter> filters = new ArrayList<Filter>();
         filters.add(new Filter("RGB",
-                createFilterCode("/opt/snapfind/lib/fil_rgb"),
+                createFilterCode("/usr/share/diamond/filters/fil_rgb"),
                 1, emptyList, emptyList));
 
         // create reexecute factory (faster to execute)
         factory = new SearchFactory(filters, scope);
 
         filters.add(new Filter("thumbnailer",
-                createFilterCode("/opt/snapfind/lib/fil_thumb"),
+                createFilterCode("/usr/share/diamond/filters/fil_thumb"),
                 1, dependencies, thumbArgs));
         filters.add(new Filter("circles",
-                createFilterCode("/usr/share/fatfind/filter/fil_circle"),
+                createFilterCode("/usr/share/diamond/filters/fil_circle"),
                 1, dependencies, circleArgs));
 
         SearchFactory fullFactory = new SearchFactory(filters, scope);
